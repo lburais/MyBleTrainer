@@ -4,9 +4,9 @@ var app = require('express')()
 var server = require('http').createServer(app) // for getting IP dynamicaly in index.ejs
 var io = require('socket.io')(server) // for getting IP dynamicaly in index.ejs
 var path = require('path')
-var MyServo = require('./MyServo')
-var MyBleTrainer = require('./MyBleTrainer')
-var DaumBLE = require('./BLE/daumBLE')
+var MyServo = require('./BLE/MyServo')
+var MyBleTrainer = require('./BLE/MyBleTrainer')
+var TrainerBLE = require('./BLE/trainerBLE')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
 var DEBUG = config.DEBUG.server // turn this on for debug information in consol
 const { version } = require('./package.json') // get version number from package.json
@@ -43,7 +43,7 @@ var brforce = 0;  // breacking force init
 var watt=25;
 var speedms = 0.0; //init with lowest resistance
 var controlled = false;
-var daumBLE; // wait for sensor befor start advertising
+var trainerBLE; // wait for sensor befor start advertising
 var myBleTrainer = new MyBleTrainer()
 
 // /////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ io.on('connection', socket => {
     if (DEBUG) console.log('[server.js] - reconnect')
     gear = 1
     myBleTrainer.recon();
-    daumBLEinit ();
+    trainerBLEinit ();
     io.emit('key', '[server.js] - reconnect')
   })
   socket.on('stop', function (data) {
@@ -88,21 +88,21 @@ process.on('SIGINT', () => {
 // /////////////////////////////////////////////////////////////////////////
 // Bike information transfer to BLE & Webserver
 // /////////////////////////////////////////////////////////////////////////
-function daumBLEinit () {
-    daumBLE = new DaumBLE(options = {
+function trainerBLEinit () {
+    trainerBLE = new TrainerBLE(options = {
         name: 'Jo1'
     },serverCallback);
 
-daumBLE.on('disconnect', string => {
+trainerBLE.on('disconnect', string => {
     io.emit('control', 'disconnected')
     controlled = false;
 });
 
-daumBLE.on('key', string => {
+trainerBLE.on('key', string => {
   if (DEBUG) console.log('[server.js] - key: ' + string)
   io.emit('key', '[server.js] - ' + string)
 })
-daumBLE.on('error', string => {
+trainerBLE.on('error', string => {
   if (DEBUG) console.log('[server.js] - error: ' + string)
   io.emit('error', '[server.js] - ' + string)
 })
@@ -111,7 +111,7 @@ daumBLE.on('error', string => {
 }
 
 myBleTrainer.on('notifications_true', () => {
-    daumBLEinit ();
+    trainerBLEinit ();
 });
 
 myBleTrainer.on('notified', data => {
@@ -132,8 +132,8 @@ myBleTrainer.on('notified', data => {
         io.emit('power', data.power);
     }
     if ('hr' in data) io.emit('hr', data.hr);
-    daumBLE.notifyFTMS(data)
-    daumBLE.notifyCSP(data)
+    trainerBLE.notifyFTMS(data)
+    trainerBLE.notifyCSP(data)
     myServo.getSpeed(data.speed, watt)
 });
 

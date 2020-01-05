@@ -7,7 +7,7 @@ const FitnessMachineService = require('./ftms-service');
 const DeviceInformationService = require('./device-information-service');
 //const RSCService = require('./rsc-service');
 
-class DaumBLE extends EventEmitter {
+class TrainerBLE extends EventEmitter {
   constructor (options, serverCallback) {
     super();
 
@@ -20,11 +20,11 @@ class DaumBLE extends EventEmitter {
     //this.rsc = new RSCService();
 
     let self = this;
-    console.log(`[daumBLE.js] - ${this.name} - BLE server starting`);
+    console.log(`[trainerBLE.js] - ${this.name} - BLE server starting`);
     self.emit('key', this.name + ' - BLE server starting');
 
     bleno.on('stateChange', (state) => {
-      console.log(`[daumBLE.js] - ${this.name} - new state: ${state}`);
+      console.log(`[trainerBLE.js] - ${this.name} - new state: ${state}`);
       self.emit('key', this.name + ' - new state: ' + state);
 
       self.emit('stateChange', state);
@@ -43,7 +43,7 @@ class DaumBLE extends EventEmitter {
     });
 
     bleno.on('advertisingStart', (error) => {
-      console.log(`[daumBLE.js] - ${this.name} - advertisingStart: ${(error ? 'error ' + error : 'success')}`);
+      console.log(`[trainerBLE.js] - ${this.name} - advertisingStart: ${(error ? 'error ' + error : 'success')}`);
       self.emit('advertisingStart', error);
       self.emit('error', error)
 
@@ -55,42 +55,42 @@ class DaumBLE extends EventEmitter {
                 self.ftms
         ],
         (error) => {
-                console.log(`[daumBLE.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`);
+                console.log(`[trainerBLE.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`);
           });
       }
     });
 
     bleno.on('advertisingStartError', () => {
-      console.log(`[daumBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
+      console.log(`[trainerBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
       self.emit('advertisingStartError');
-      self.emit('error', `[daumBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
+      self.emit('error', `[trainerBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
     });
 
     bleno.on('advertisingStop', error => {
-      console.log(`[daumBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
+      console.log(`[trainerBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
       self.emit('advertisingStop');
-      self.emit('error', `[daumBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
+      self.emit('error', `[trainerBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
     });
 
     bleno.on('servicesSet', error => {
-      console.log(`[daumBLE.js] - ${this.name} - servicesSet: ${(error) ? 'error ' + error : 'success'}`);
+      console.log(`[trainerBLE.js] - ${this.name} - servicesSet: ${(error) ? 'error ' + error : 'success'}`);
     });
 
     bleno.on('accept', (clientAddress) => {
-      console.log(`[daumBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
+      console.log(`[trainerBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
       self.emit('accept', clientAddress);
-      self.emit('key', `[daumBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
+      self.emit('key', `[trainerBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
       bleno.updateRssi();
     });
 
     bleno.on('rssiUpdate', (rssi) => {
-      console.log(`[daumBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
-      self.emit('key', `[daumBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
+      console.log(`[trainerBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
+      self.emit('key', `[trainerBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
     });
     
     bleno.on('disconnect', (clientAddress) => {
         self.emit('disconnect', clientAddress);
-        self.emit('key', `[daumBLE.js] - ${this.name} - disconnect - Client: ${clientAddress}`); 
+        self.emit('key', `[trainerBLE.js] - ${this.name} - disconnect - Client: ${clientAddress}`); 
     });
   }
 
@@ -106,4 +106,4 @@ class DaumBLE extends EventEmitter {
     };
 };
 
-module.exports = DaumBLE;
+module.exports = TrainerBLE;

@@ -1,9 +1,8 @@
-# ergoFACE
+# Virtual Smart Trainer
 * forked from https://github.com/360manu/kettlerUSB2BLE
-* adjusted to work with Daum ergobike 8008TRS
+* and https://github.com/weinzmi/ergoFACE
 
-## the original project "ergoFACE concept"
-* can be found here https://github.com/weinzmi/ergoFACE
+Outdated!!!! 
 
 ## prerequisites
 * RS232 to USB converter
