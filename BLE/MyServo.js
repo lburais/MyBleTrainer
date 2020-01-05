@@ -47,7 +47,9 @@ function MyServo () {
         // ignore 0 speed 
         if (speed > 0) {
             speed_ms = speed / 3.6
-           // self.setWatt(watt)
+            // self.setWatt(watt) //called by ERG-Mode
+        } else {
+            self.setForce(133) // max brforce
         }
         // in ERG-Mode adjust resistance unit...
     } 

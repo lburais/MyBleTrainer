@@ -116,14 +116,15 @@ myBleTrainer.on('notifications_true', () => {
 
 myBleTrainer.on('notified', data => {
     // recalculate power if BLE controlled? P = F * v
-  //  if (controlled = true) data.power = watt;
     
     if ('rpm' in data) io.emit('rpm', data.rpm);
     if ('speed' in data) {
         speedms = Number(data.speed/3.6).toFixed(4);
+        myServo.getSpeed(data.speed, watt)
+
         io.emit('speed', data.speed);
     }
-    if ('power' in data && controlled == true) {
+    if ('power' in data && controlled == true && brforce > 0) {
         var tp=brforce * data.speed/3.6
         data.power = Math.round(tp);
         io.emit('power', data.power);
@@ -134,7 +135,6 @@ myBleTrainer.on('notified', data => {
     if ('hr' in data) io.emit('hr', data.hr);
     trainerBLE.notifyFTMS(data)
     trainerBLE.notifyCSP(data)
-    myServo.getSpeed(data.speed, watt)
 });
 
 
@@ -163,7 +163,6 @@ function serverCallback (message, ...args) {
     if (DEBUG) console.log('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
         watt = args[0]
-        //daumUSB.setPower(watt)
         brforce=myServo.setWatt(watt);
         
        if (DEBUG) console.log('[server.js] - Bike in ERG Mode - set Power to: ', watt)
