@@ -15,17 +15,17 @@ class FitnessMachineService extends Bleno.PrimaryService {
       uuid: '1826',
       characteristics: [
         new StaticReadCharacteristic('2ACC', 'Fitness Machine Feature', [
-          0x02,
-          0x40,
+          0xAA, //0x22,
+          0x44,
           0x00,
           0x00,
-          0x08,
-          0x20,
+          0x0C, //0x08,
+          0x20, //0x00,
           0x00,
-          0x00
+          0x00 
         ]), // Feature Characteristics - crazy mixup in bits and bytes
-        controlPoint,
         indoorBikeData,
+        controlPoint,
         fitnessMachineStatus,
         new StaticReadCharacteristic('2AD8', 'SupportedPowerRange', [
           0x19,
@@ -34,11 +34,12 @@ class FitnessMachineService extends Bleno.PrimaryService {
           0x03,
           0x05,
           0x00
-        ]) // SupportedPowerRange (25 - 800 with 5watts step)
+        ]// SupportedPowerRange (25 - 800 with 5watts step)
         // 00 19 03 20 00 05 - checked with nRF connect, and it displays 6400, 8195 1280 watt.
         // go to: https://www.scadacore.com/tools/programming-calculators/online-hex-converter/
         // 19 00 20 03 05 00 - this should be the correct - INT16 - Little Endian (BA)
-      ]
+
+        )]
     })
 
     this.indoorBikeData = indoorBikeData

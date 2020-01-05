@@ -1,8 +1,15 @@
 var EventEmitter = require('events').EventEmitter
-var com = require('serialport')
+//var com = require('serialport')
+//const SerialPort = require('@serialport/stream')
+//const MockBinding = require('@serialport/binding-mock')
 var DaumSIM = require('./daumSIM')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
 var DEBUG = config.DEBUG.daumUSB // turn this on for debug information in console
+
+//SerialPort.Binding = MockBinding
+//MockBinding.createPort('/dev/ROBOT', { echo: true, record: true })
+
+
 // /////////////////////////////////////////////////////////////////////////
 // instantiation
 // /////////////////////////////////////////////////////////////////////////
@@ -10,7 +17,7 @@ var daumSIM = new DaumSIM()
 
 function daumUSB () {
   var self = this
-  self.port = null
+ // self.port = null // habe keinen speziellen Trainer, wird also dummy schnittstelle
   self.pending = [] // buffer for pushing pending commands to the port
   self.writer = null // used for flushing next pending data
   self.reader = null // used for 'runData' command
@@ -149,25 +156,28 @@ function daumUSB () {
   // //////////////////////////////////////////////////////////////////////////
   // open port as specified by daum
   // /////////////////////////////////////////////////////////////////////////
+  /*
   this.open = function () {
-    com.list(function (err, ports) {
+      
+      com.list(function (err, ports) {
       if (err) {
         self.emitter.emit('error', '[daumUSB.js] - open: ' + err)
         throw err
       }
-      ports.forEach(function (p) {
-        if (p.vendorId && p.productId) { // ??? don't know if this is the ID of ergobike, or the serial adapter, this has to be configured for every bike, so I might skip it
-          if (DEBUG) console.log('[daumUSB.js] - open:' + p.vendorId + '  ' + p.productId) // RS232 converter Ids
-          if (DEBUG) console.log('[daumUSB.js] - open - Ergobike found on port ' + p.comName)
+      //ports.forEach(function (p) {
+        //if (p.vendorId && p.productId) { // ??? don't know if this is the ID of ergobike, or the serial adapter, this has to be configured for every bike, so I might skip it
+         // if (DEBUG) console.log('[daumUSB.js] - open:' + p.vendorId + '  ' + p.productId) // RS232 converter Ids
+         // if (DEBUG) console.log('[daumUSB.js] - open - Ergobike found on port ' + p.comName)
           self.emitter.emit('key', '[daumUSB.js] - Ergobike found on port ' + p.comName)
-          var port = new com.SerialPort(p.comName, {
+          /*var port = new com.SerialPort(p.comName, {
             baudrate: config.port.baudrate,
             dataBits: config.port.dataBits,
             parity: config.port.parity,
             stopBits: config.port.stopBits,
             flowControl: config.port.flowControl,
             parser: com.parsers.byteLength(config.port.parserLength) // custom parser set to byte length that is more than the actual response message of ergobike, but no other way possible right know
-          }, false) // thats why the index loops in 'readAndDispatch' are used to get the prefix of each command
+          }, false) */ // thats why the index loops in 'readAndDispatch' are used to get the prefix of each command 
+ /*         var port = new SerialPort('/dev/ROBOT')
           port.open(function () {
             self.port = port
             port.on('data', self.readAndDispatch)
@@ -181,8 +191,8 @@ function daumUSB () {
             self.emitter.emit('key', '[daumUSB.js] - runData')
             self.reader = setInterval(self.runData, config.intervals.runData) // continiously get 'run_Data' from ergobike; 500ms means, every 1000ms a buffer
           })
-        }
-      })
+        //}
+    //  })
     })
     return self.emitter
   }
@@ -198,6 +208,7 @@ function daumUSB () {
     setTimeout(self.open, config.timeouts.open)
     setTimeout(self.start, config.timeouts.start)
   }
+ */ 
   // //////////////////////////////////////////////////////////////////////////
   // start sequence - this is just a dummy, because getAdress is used during port initialization
   // //////////////////////////////////////////////////////////////////////////
@@ -226,8 +237,8 @@ function daumUSB () {
   // set daum command function - general function for sending data - still testing
   // //////////////////////////////////////////////////////////////////////////
   this.setDaumCommand = function (command, adress, sendData) {
-    if (command !== config.daumCommands.get_Adress) {
-      if (gotAdressSuccess === true) {
+    ///if (command !== config.daumCommands.get_Adress) {
+      //if (gotAdressSuccess === true) {
         if (DEBUG) console.log('[daumUSB.js] - set command [0x' + command + ']: ' + sendData)
         if (sendData === 'none') { // this is for commands that just have command and adress - no data
           var datas = Buffer.from(command + ('00' + (adress).toString()).slice(-2), 'hex')
@@ -235,14 +246,14 @@ function daumUSB () {
           datas = Buffer.from(command + ('00' + (adress).toString()).slice(-2) + ('00' + (sendData).toString(16)).slice(-2), 'hex')
         }
         self.write(datas)
-      } else { // if no cockpit adress found, just post the message and not execute the command
-        if (DEBUG) console.log('[daumUSB.js] - cannot set command [0x' + command + '] - no cockpit adress')
-        self.emitter.emit('error', '[daumUSB.js] - cannot set command [0x' + command + '] - no cockpit adress')
-      }
-    } else { // this is just for get adress
-      datas = Buffer.from(command, 'hex')
-      self.write(datas)
-    }
+     // } else { // if no cockpit adress found, just post the message and not execute the command
+      //  if (DEBUG) console.log('[daumUSB.js] - cannot set command [0x' + command + '] - no cockpit adress')
+     //   self.emitter.emit('error', '[daumUSB.js] - cannot set command [0x' + command + '] - no cockpit adress')
+     // }
+    //} else { // this is just for get adress
+    //  datas = Buffer.from(command, 'hex')
+    //  self.write(datas)
+   // }
   }
   // //////////////////////////////////////////////////////////////////////////
   // get cockpit adress - simplified by using setDaumCommand function
@@ -296,4 +307,7 @@ function daumUSB () {
     return 'Daum on ' + self.port.comName
   }
 }
+
+
+
 module.exports = daumUSB // export for use in other scripts, e.g.: server.js

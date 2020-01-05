@@ -7,7 +7,9 @@
 // in this setting, the gearshift buttons can be used to change gear = speedd
 // and daumSIM calculates the correct power for the received speed from RS232
 // ///////////////////////////////////////////////////////////////
-var DEBUG = false
+const config = require('config-yml') // Use config for yaml config files in Node.js projects
+var DEBUG = config.DEBUG.daumSIM
+
 var maxGrade = 8 // maximum gradient in %
 
 function daumSIM () {
@@ -17,8 +19,8 @@ function daumSIM () {
     // ////////////////////////////////////////////////////////////////////////
     //  Rider variables !!! TBD - make a form to change these rider variables per webserver
     // ////////////////////////////////////////////////////////////////////////
-    var mRider = 80 // mass in kg of the rider
-    var mBike = 7 // mass in kg of the bike
+    var mRider = config.simulation.mRider // mass in kg of the rider
+    var mBike = config.simulation.mBike // mass in kg of the bike
     var mass = mBike + mRider // mass in kg of the bike + rider
     // var h = 1.92 // hight in m of rider - this is allready included in the cw value sent from ZWIFT or FULLGAZ
     // var area = 0.0276 * Math.pow(h, 0.725) * Math.pow(mRider, 0.425) + 0.1647;  //  cross sectional area of the rider, bike and wheels - this is allready included in the cw value sent from ZWIFT or FULLGAZ
@@ -42,9 +44,9 @@ function daumSIM () {
     // ////////////////////////////////////////////////////////////////////////
     //  Constants
     // ////////////////////////////////////////////////////////////////////////
-    var g = 9.8067 // acceleration in m/s^2 due to gravity
-    var p = 1.225 // air density in kg/m^3 at 15°C at sea level
-    var e = 0.97 // drive chain efficiency
+    var g = config.simulation.g // acceleration in m/s^2 due to gravity
+    var p = config.simulation.p // air density in kg/m^3 at 15°C at sea level
+    var e = config.simulation.e // drive chain efficiency
     // var vw = Math.abs(v + w); // have to do this to avoid NaN in Math.pow()
     // ////////////////////////////////////////////////////////////////////////
     // Cycling Wattage Calculator - https://www.omnicalculator.com/sports/cycling-wattage

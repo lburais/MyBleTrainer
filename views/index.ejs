@@ -39,7 +39,7 @@
         padding: 1rem 1rem;
       }
       .progress-bar {
-        color: #21252B;
+        color: #21252C;
       }
       .scroll {
         max-height: 420px;
@@ -97,6 +97,14 @@
         progressBar.width(data * 1.5 + "%")
         $('#speed_bar').text(data + " km/h");
       });
+      socket.on('hr', function (data) {
+        $('#hr').html(data);
+        $('#hr_bar').css("width", data * 1.5+ "bmp");
+        $('#hr_bar').attr("aria-valuenow", data);
+        var progressBar = $('#hr_bar')
+        progressBar.width(data * 1.5 + "bpm")
+        $('#hr_bar').text(data + " bpm");
+      });
       socket.on('rpm', function (data) {
         $('#rpm').html(data);
         $('#rpm_bar').css("width", data * 0.833 + "%");
@@ -139,13 +147,17 @@
       socket.on('program', function (data) {
         $('#program').text("Program: " + data);
       });
-      socket.on('control', function (data) {
-        $('#control').text(data);
-        if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
-          $('#switch').bootstrapToggle('disable')
-          $('#mode').bootstrapToggle('disable')
-        }
-      });
+     // socket.on('control', function (data) {
+     //   $('#control').text(data);
+     //   if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
+     //     $('#switch').bootstrapToggle('disable')
+     //     $('#mode').bootstrapToggle('disable')
+     //   }
+     //   if (data === 'disconnected') {
+     //     $('#switch').bootstrapToggle('enable')
+     //     $('#mode').bootstrapToggle('enable') 
+      //  }
+      //});
       socket.on('version', function (data) {
         $('#version').text(data);
       });
@@ -158,38 +170,16 @@
           socket.emit('restart', 'Salut serveur, ça va ?');
           return false;
         });
+        $('#reconnect').click(function(){
+          socket.emit('reco', 'reco');
+          return false;
+        });
         $('#stop').click(function(){
           socket.emit('stop', 'stop');
           return false;
         });
-        $('#mode').change(function(){
-          if( $(this).is(':checked') ) {
-            socket.emit('mode', 'ERG');
-            // $("#switch").bootstrapToggle('on'); // for connecting switch and mode to change at the same time - this is not working properly, too many messages >100 are sent
-          } else {
-              socket.emit('mode', 'SIM');
-              // $("#switch").bootstrapToggle('off'); // for connecting switch and mode to change at the same time - this is not working properly, too many messages >100 are sent
-            }
-          return false;
-        });
-        $('#switch').change(function(){
-          if( $(this).is(':checked') ) {
-            socket.emit('switch', 'Power');
-            // $("#mode").bootstrapToggle('on'); // for connecting switch and mode to change at the same time - this is not working properly, too many messages >100 are sent
-          } else {
-              socket.emit('switch', 'Gear');
-              // $("#mode").bootstrapToggle('off'); // for connecting switch and mode to change at the same time - this is not working properly, too many messages >100 are sent
-            }
-          return false;
-        });
         $('#start').click(function(){
           socket.emit('start', 'start');
-          return false;
-        });
-        $('a.dropdown-item.prog').click(function() {
-          var id = $(this).attr('id');
-          var idd = id.replace('program_', '');
-          socket.emit('setProgram', idd);
           return false;
         });
         $('a.dropdown-item.gear').click(function() {
@@ -219,25 +209,18 @@
                 </a>
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuGear">
                   <a class="dropdown-item gear" id="gear_01" href="#">01</a>
+                  <a class="dropdown-item gear" id="gear_03" href="#">03</a>
                   <a class="dropdown-item gear" id="gear_05" href="#">05</a>
-                  <a class="dropdown-item gear" id="gear_0a" href="#">10</a>
-                  <a class="dropdown-item gear" id="gear_0f" href="#">15</a>
-                  <a class="dropdown-item gear" id="gear_14" href="#">20</a>
-                  <a class="dropdown-item gear" id="gear_19" href="#">25</a>
-                </div>
-              </li>
-              <li class="nav-item dropdown active">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  set Program
-                </a>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuProgram">
-                  <a class="dropdown-item prog" id="program_00" href="#">00 - Manual Wattage Mode</a>
-                  <a class="dropdown-item prog" id="program_01" href="#">01 - Ramp up Program</a>
-                  <a class="dropdown-item prog" id="program_31" href="#">49 - Incline Mode</a>
+                  <a class="dropdown-item gear" id="gear_07" href="#">07</a>
+                  <a class="dropdown-item gear" id="gear_09" href="#">09</a>
+                  <a class="dropdown-item gear" id="gear_11" href="#">11</a>
                 </div>
               </li>
               <li class="nav-item active">
                 <a class="nav-link" href="#" id="restart"><strong>RESTART</strong></a>
+              </li>
+              <li class="nav-item active">
+                <a class="nav-link" href="#" id="reconnect"><strong>RECONNECT</strong></a>
               </li>
               <li class="nav-item active">
                 <a class="nav-link" href="#" id="stop"><strong>STOP</strong></a>
@@ -248,9 +231,6 @@
         <div class="row">
           <div class="col-md-4">
             <div class="card text-center">
-              <div class="card-header">
-                <input type="checkbox" id="switch" class="custom-control-input" unchecked data-toggle="toggle" href="#" data-on="set Power" data-off="switch Gears" data-onstyle="primary" data-offstyle="secondary">
-              </div>
               <div class="card-body">
                 <h5 class="title">Power</h5>
                 <!-- <p class="power" id="power">0</p> -->
@@ -269,6 +249,11 @@
                 <div class="progress">
                   <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
+                <h5 class="title">Heart-Rate</h5>
+                <!-- <p class="hr" id="hr">0</p> -->
+                <div class="progress">
+                  <div id="hr_bar" class="progress-bar orange" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                </div>
               </div>
               <div class="card-footer text-muted">
                 <h1><span id="program" class="badge badge-primary">Program: -</span>
@@ -278,9 +263,6 @@
           </div>
           <div class="col-md-4">
             <div class="card text-center">
-              <div class="card-header">
-                <input type="checkbox" id="mode" unchecked data-toggle="toggle" data-on="ERG Mode" data-off="SIM Mode" data-onstyle="primary" data-offstyle="secondary">
-              </div>
               <div class="card-body">
                 <ul class="list-group">
                   <li class="list-group-item d-flex justify-content-between align-items-center">
