@@ -1,6 +1,6 @@
 /*jslint node: true */
 //"use strict";
-process.env.NOBLE_HCI_DEVICE_ID="1"
+process.env.NOBLE_HCI_DEVICE_ID="0"
 process.env.NOBLE_MULTI_ROLE=1
 //process.env.NOBLE_REPORT_ALL_HCI_EVENTS=1
 const noble = require('noble');

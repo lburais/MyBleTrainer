@@ -1,4 +1,4 @@
-process.env.BLENO_HCI_DEVICE_ID="0";
+process.env.BLENO_HCI_DEVICE_ID="1";
 //process.env.BLENO_ADVERTISING_INTERVAL=300
 const bleno = require('bleno');
 const EventEmitter = require('events');
