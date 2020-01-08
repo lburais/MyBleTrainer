@@ -258,6 +258,20 @@ this.recon = function () {
           }, 1000);
     }
 
+this.discon = function () {
+            if (DEBUG) console.log('reconnect');
+
+        noble.stopScanning();
+        
+          peripherals.forEach(function(peripheral) {
+            if (DEBUG) console.log('Disconnecting from ' + peripheral.uuid + '...');
+            peripheral.disconnect( function(){
+                if (DEBUG) console.log('disconnected');
+            });
+          });
+        peripherals = [];
+    }
+
 
 var exitHandler = function exitHandler() {
   peripherals.forEach(function(peripheral) {

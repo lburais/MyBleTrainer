@@ -10,8 +10,9 @@
   "author": "jo",
   "license": "MIT",
   "dependencies": {
+    "ant-plus": "latest",
     "bleno": "^0.5.0",
-    "bluetooth-hci-socket": "^0.5.3-3",
+    "bluetooth-hci-socket": "latest",
     "config-yml": "^0.10.3",
     "ejs": "^3.0.1",
     "express": "^4.17.1",

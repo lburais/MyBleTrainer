@@ -33,7 +33,7 @@ function MyServo () {
         
         
         pulseWidth = Math.round(1150 + number*300/155)
- console.log('[Servo.js] - this.setServo pulsewidth:', pulseWidth)
+ //console.log('[Servo.js] - this.setServo pulsewidth:', pulseWidth)
         if (pulseWidth > 1470) pulseWidth = 1470;
         if (pulseWidth < 1170) pulseWidth = 1170;
         if (pulseWidth <= 1470) {  

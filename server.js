@@ -6,6 +6,7 @@ var io = require('socket.io')(server) // for getting IP dynamicaly in index.ejs
 var path = require('path')
 var MyServo = require('./BLE/MyServo')
 var MyBleTrainer = require('./BLE/MyBleTrainer')
+var MyAntTrainer = require('./BLE/MyAntTrainer')
 var TrainerBLE = require('./BLE/trainerBLE')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
 var DEBUG = config.DEBUG.server // turn this on for debug information in consol
@@ -45,6 +46,8 @@ var speedms = 0.0; //init with lowest resistance
 var controlled = false;
 var trainerBLE; // wait for sensor befor start advertising
 var myBleTrainer = new MyBleTrainer()
+var myAntTrainer = new MyAntTrainer()
+
 
 // /////////////////////////////////////////////////////////////////////////
 // Web server callback, listen for actions taken at the server GUI, not from Daum or BLE
@@ -123,6 +126,34 @@ myBleTrainer.on('notified', data => {
         myServo.getSpeed(data.speed, watt)
 
         io.emit('speed', data.speed);
+    }
+    if ('power' in data && controlled == true && brforce > 0) {
+        var tp=brforce * data.speed/3.6
+        data.power = Math.round(tp);
+        io.emit('power', data.power);
+        
+    } else {
+        io.emit('power', data.power);
+    }
+    if ('hr' in data) io.emit('hr', data.hr);
+    trainerBLE.notifyFTMS(data)
+    trainerBLE.notifyCSP(data)
+});
+
+myAntTrainer.on('notifications_true', () => {
+    trainerBLEinit ();
+        myBleTrainer.discon(); //prefer Ant over BLE Sensors
+
+});
+myAntTrainer.on('notified', data => {
+    // recalculate power if BLE controlled? P = F * v
+    
+    if ('rpm' in data) io.emit('rpm', data.rpm.toFixed(0));
+    if ('speed' in data) {
+        speedms = Number(data.speed/3.6).toFixed(4);
+        myServo.getSpeed(data.speed, watt)
+
+        io.emit('speed', data.speed.toFixed(1));
     }
     if ('power' in data && controlled == true && brforce > 0) {
         var tp=brforce * data.speed/3.6
