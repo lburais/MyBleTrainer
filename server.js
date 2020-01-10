@@ -9,6 +9,8 @@ var MyBleTrainer = require('./BLE/MyBleTrainer')
 var MyAntTrainer = require('./BLE/MyAntTrainer')
 var TrainerBLE = require('./BLE/trainerBLE')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
+var nearest = config.Servo.nearest;
+var widest = config.Servo.widest;
 var DEBUG = config.DEBUG.server // turn this on for debug information in consol
 const { version } = require('./package.json') // get version number from package.json
 // ////////////////////////////////////////////////////////////////////////
@@ -40,6 +42,7 @@ server.listen(process.env.PORT || 3000, function () { // for getting IP dynamica
 
 var myServo = new MyServo();
 myServo.setGear(1);
+var gearvalue = widest
 var brforce = 0;  // breacking force init
 var watt=25;
 var speedms = 0.0; //init with lowest resistance
@@ -50,10 +53,12 @@ var myAntTrainer = new MyAntTrainer()
 
 
 // /////////////////////////////////////////////////////////////////////////
-// Web server callback, listen for actions taken at the server GUI, not from Daum or BLE
+// Web server callback, listen for actions taken at the server GUI, not from Ant or BLE
 // /////////////////////////////////////////////////////////////////////////
 
 io.on('connection', socket => {
+    io.emit('preset_servo', [nearest,widest,gearvalue])
+
   if (DEBUG) console.log('[server.js] - connected to socketio')
   socket.on('reset', function (data) {
     io.emit('key', '[server.js] - ergoFACE Server started')
@@ -81,6 +86,35 @@ io.on('connection', socket => {
     myServo.setGear(gear)
     io.emit('raw', '[server.js] - set Gear: ' + gear)
   })
+    socket.on('servosetting', function (data) {
+    settingservo = (data==='on') ? true:false;
+    if (DEBUG) console.log('[server.js] - servosetting ' + data)
+    if (settingservo) { 
+        io.emit('key', '[server.js] - servosetting on')
+        var servo_values = [nearest,widest]
+        io.emit('preset_servo', servo_values)
+        } 
+    else { 
+        io.emit('key', '[server.js] - servosetting off')
+    }
+  })
+    socket.on('new_servo_val', function (data) {
+        if (DEBUG) console.log('[server.js] - new_servoval ' + data[0])
+        if (data[1] === 'change_min') {
+            nearest = data[0];
+        }
+        else {
+            widest = data[0];
+        }
+        myServo.setLimit(data);
+    })
+    socket.on('new_gear_val', function (data) {
+        if (DEBUG) console.log('[server.js] - new_gearval ' + data[0])
+        myServo.setDirect(data);
+    })
+  
+
+  
 })
 
 process.on('SIGINT', () => {
@@ -180,7 +214,6 @@ function serverCallback (message, ...args) {
     case 'reset':
       if (DEBUG) console.log('[server.js] - USB Reset triggered via BLE')
       io.emit('key', '[server.js] - Reset triggered via BLE')
-      daumUSB.restart()
       success = true
       break
     case 'control': // do nothing special
@@ -194,7 +227,7 @@ function serverCallback (message, ...args) {
     if (DEBUG) console.log('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
         watt = args[0]
-        brforce=myServo.setWatt(watt);
+        if (!settingservo) brforce=myServo.setWatt(watt);
         
        if (DEBUG) console.log('[server.js] - Bike in ERG Mode - set Power to: ', watt)
         io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)

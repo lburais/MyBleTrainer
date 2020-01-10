@@ -1,10 +1,17 @@
-
 const pigpio = require('pigpio');
-    pigpio.configureSocketPort(8889);
-    var Gpio =pigpio.Gpio;
+pigpio.configureSocketPort(8889);
+var Gpio = pigpio.Gpio;
 const motor = new Gpio(17, {mode: Gpio.OUTPUT});
+const config = require('config-yml');
+var nearest = config.Servo.nearest;
+var widest = config.Servo.widest;
+var range = widest - nearest;
+var servo_set = 0;
+const fs = require('fs');
+var config_file = "./config.yml";
 
-let pulseWidth = 900;
+
+let pulseWidth = widest;
 
 /*
 setInterval(() => {
@@ -24,23 +31,24 @@ function MyServo () {
 
     this.setServo = function(number) {
         //number between 0 and 155 (25W-800W, 5W steps, resistance equivalent e-1) -> pulseWidth between 900 and 2100
-        //0=90; 155 = 2100 => 2100-900=1200 -> 
+        //0=900; 155 = 2100 => 2100-900=1200 -> 
         //neu: 1170 - 1470 ?? -d= 300
         //155 soll 0
-        //0 soll 155 
-        if (number < 1) number = 1;
-        number = 155 - (number - 1/number)
-        
-        
-        pulseWidth = Math.round(1150 + number*300/155)
- //console.log('[Servo.js] - this.setServo pulsewidth:', pulseWidth)
-        if (pulseWidth > 1470) pulseWidth = 1470;
-        if (pulseWidth < 1170) pulseWidth = 1170;
-        if (pulseWidth <= 1470) {  
-            setInterval(() => {
+        //0 soll 155
+       servo_set = 155-number;
+
+    console.log('[Servo.js] - this.setServo number:', servo_set)
+
+        pulseWidth = Math.round(parseInt(nearest, 10) + servo_set*range/155)
+        if (pulseWidth > widest) pulseWidth = widest;
+        if (pulseWidth < nearest) pulseWidth = nearest;
+         console.log('[Servo.js] - this.setServo pulsewidth:', pulseWidth)
+
+        pulseWidth = parseInt(pulseWidth, 10); 
+   //     setInterval(() => {
                     motor.servoWrite(pulseWidth);
-            }, 80);
-        }
+    //    }, 80);
+        
     }
     
     this.getSpeed = function(speed, watt) {
@@ -69,6 +77,47 @@ function MyServo () {
         return force;
     }
     
+    this.setLimit = function(limit) {
+        var caller = limit[1];
+        if (caller === 'change_min') {
+            fs.readFile(config_file, 'utf8', function (err,data) {
+                if (err) {
+                    return console.log(err);
+                }
+                var old_servo = 'nearest: ' + nearest;
+ console.log('[Servo.js] - this.setServo servo:', old_servo)
+                nearest = limit[0];
+                var new_servo = 'nearest: ' + nearest;
+ console.log('[Servo.js] - this.setServo servo:', new_servo)
+                var result = data.replace(old_servo, new_servo);
+                fs.writeFileSync(config_file, result, 'utf8', function (err) {
+                    if (err) return console.log(err);
+                }); 
+            });
+            servo_set = nearest;
+ console.log('[Servo.js] - this.setServo servo:', servo_set)
+
+        }
+        else {
+            fs.readFile(config_file, 'utf8', function (err,data) {
+                if (err) {
+                    return console.log(err);
+                }
+                var old_servo = 'widest: ' + widest;
+                widest = limit[0];
+                var new_servo = 'widest: ' + widest;
+                var result = data.replace(old_servo, new_servo);
+                fs.writeFileSync(config_file, result, 'utf8', function (err) {
+                    if (err) return console.log(err);
+                });
+            });
+
+            servo_set = widest;
+        } 
+        range = widest - nearest;
+            motor.servoWrite(servo_set);
+    }
+    
         this.setForce = function(force) {
         // need to adjust force: P = F*v ; F/v = const. 'resistance-unit-factor'
         // power shall be between 25 and 800 to meet the wattage profile
@@ -83,7 +132,20 @@ function MyServo () {
     }
     
     this.setGear = function(gear) {
-        self.setServo(Math.round((gear)*(155)/(11)));
+        gear = parseInt(gear,10)-1;
+        // 1 - 11 => 0 - 155
+        if (gear == 0) {
+            self.setServo(Math.round(gear));
+        }
+        else {
+            self.setServo(Math.round(gear * 155 / (11-(1*gear/10 ))));
+        }
+    }
+    
+    this.setDirect = function(data) {
+        pulseWidth = parseInt(data[0], 10); 
+   //     setInterval(() => {
+                    motor.servoWrite(pulseWidth);
     }
     
 }

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="./public/css/bootstrap.min.css" rel="stylesheet">
     <link href="./public/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link href="./public/css/style.css" rel="stylesheet">
+
 
     <link rel="apple-touch-icon" sizes="180x180" href="./public/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./public/favicon-32x32.png">
@@ -91,26 +93,26 @@
       ///////////////////////////////////////////////////////////////////////////
       socket.on('speed', function (data) {
         $('#speed').html(data);
-        $('#speed_bar').css("width", data * 1.5+ "%");
+        $('#speed_bar').css("width", data * 1.4+ "%");
         $('#speed_bar').attr("aria-valuenow", data);
         var progressBar = $('#speed_bar')
-        progressBar.width(data * 1.5 + "%")
+        progressBar.width(data * 1.4 + "%")
         $('#speed_bar').text(data + " km/h");
       });
       socket.on('hr', function (data) {
         $('#hr').html(data);
-        $('#hr_bar').css("width", data * 1.5+ "bmp");
+        $('#hr_bar').css("width", data * 0.435+ "bmp");
         $('#hr_bar').attr("aria-valuenow", data);
         var progressBar = $('#hr_bar')
-        progressBar.width(data * 1.5 + "bpm")
+        progressBar.width(data * 0.435 + "bpm")
         $('#hr_bar').text(data + " bpm");
       });
       socket.on('rpm', function (data) {
         $('#rpm').html(data);
-        $('#rpm_bar').css("width", data * 0.833 + "%");
+        $('#rpm_bar').css("width", data * 0.7 + "%");
         $('#rpm_bar').attr("aria-valuenow", data);
         var progressBar = $('#rpm_bar')
-        progressBar.width(data * 0.833 + "%")
+        progressBar.width(data * 0.7 + "%")
         $('#rpm_bar').text(data + " / min");
       });
       socket.on('power', function (data) {
@@ -147,6 +149,16 @@
       socket.on('program', function (data) {
         $('#program').text("Program: " + data);
       });
+      socket.on('preset_servo', function (data) {
+                 addAlert_key(data[0] + ' ' + data[1]);
+        document.getElementById("range_servo_min").value = data[0];
+        document.getElementById("range_servo_max").value = data[1];
+        document.getElementById("range_gear").min = data[0];
+        document.getElementById("range_gear").max = data[1];
+        document.getElementById("range_gear").value = data[2];
+        document.getElementById("gear_val").innerHTML = data[2];
+
+      });
      // socket.on('control', function (data) {
      //   $('#control').text(data);
      //   if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
@@ -174,6 +186,28 @@
           socket.emit('reco', 'reco');
           return false;
         });
+        $('#servosetting').change(function(){
+          if( $(this).is(':checked') ) {
+            document.getElementById("range_servo").style.visibility="visible";
+            socket.emit('servosetting', 'on');
+          } else {
+            document.getElementById("range_servo").style.visibility="collapse";
+            socket.emit('servosetting', 'off');
+          }
+          return false;
+        });
+        $('#measuringtoggle').change(function(){
+          if( $(this).is(':checked') ) {
+            document.getElementById("measuring").style.visibility="visible";
+            socket.emit('measuring', 'on');
+          } else {
+            document.getElementById("measuring").style.visibility="collapse";
+            socket.emit('measuring', 'off');
+          }
+          return false;
+        });
+        
+        
         $('#stop').click(function(){
           socket.emit('stop', 'stop');
           return false;
@@ -189,6 +223,23 @@
           return false;
         });
       });
+      // Slider Functions
+        
+
+        function showVal(newVal,caller){
+            if (caller === 'change_min' || caller === 'change_max') {
+                var new_servo_val=[newVal,caller]
+                socket.emit('new_servo_val', new_servo_val);
+            }
+            document.getElementById("servo_val").innerHTML = newVal;
+        }
+        function gearVal(newVal){
+                var new_gear_val=[newVal]
+                socket.emit('new_gear_val', new_gear_val);
+            document.getElementById("gear_val").innerHTML = newVal;
+        } 
+
+
     </script>
   </head>
 <body>
@@ -230,24 +281,115 @@
         </nav>
         <div class="row">
           <div class="col-md-4">
-            <div class="card text-center">
+            <div class="card text-center"> 
+                <div class="card-header">
+                    <input type="checkbox" id="servosetting" unchecked data-toggle="toggle" data-on="Servosetting On" data-off="Servosetting Off" data-onstyle="primary" data-offstyle="secondary">
+                    <input type="checkbox" id="measuringtoggle" unchecked data-toggle="toggle" data-on="Measuring On" data-off="Measuring Off" data-onstyle="primary" data-offstyle="secondary">
+            <table style="width:100%">
+                <tbody  id="range_servo" style="visibility: collapse;">
+                    <tr>
+                        <td width="15%">
+                            <h5 class="title">nearest: </h5>
+                        </td>
+                    <td>
+                        <div class="slidecontainer">
+                            <input type="range" min="900" max="2100" value="900" class="slider" id="range_servo_min" style="width: 100%; " oninput="showVal(this.value, 'input_min')" onchange="showVal(this.value,'change_min')">
+                        </div>
+                    </td>
+                    </tr>
+                    <tr>
+                        <td width="15%">
+                            <h5 class="title">widest: </h5>
+                        </td>
+                    <td>
+                        <div class="slidecontainer">
+                            <input type="range" min="900" max="2100" value="900" class="slider" id="range_servo_max" style="width: 100%; " oninput="showVal(this.value, 'input_max')" onchange="showVal(this.value,'change_max')">
+                        </div>
+                    </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <h5 class="title">Value: </h5>
+                        </td>
+                        <td>
+                            <h5 class="title" id="servo_val"> </h5>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="width:100%">
+                <tbody  id="measuring" style="visibility: collapse;">
+                    <tr>
+                        <td width = "65%">
+                            <h5 class="title">1. Select Gear to set up.</h5>
+                        </td>    
+                        <td rowspan="5">
+                             <input type="button" id="measuring_start" value="Start" onclick="msg()"> 
+                        </td> 
+                    </tr>
+                    <tr>
+                        <td>
+                            <h5 class="title">2. Start pedaling</h5>
+                        </td>    
+                    </tr>
+                    <tr>
+                        <td>
+                            <h5 class="title">3. Stop pedaling</h5>
+                        </td>    
+                    </tr>
+                    <tr>
+                        <td>
+                            <h5 class="title">4. Hit Start button.</h5>
+                        </td>    
+                    </tr>
+                    <tr>
+                        <td>
+                            <h5 class="title">5. Wail until wheel stops. -> Repeat with different gear.</h5>
+                        </td>    
+                    </tr>
+                </tbody>
+            </table>
+                    
+                    
+                    </div>
+
               <div class="card-body">
+
+                <h5 class="title">GearSlider</h5>
+                <div class="slidecontainer">
+                    <input type="range" min="900" max="2100" value="900" class="slider" id="range_gear" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                </div>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <h5 class="title">Value: </h5>
+                            </td>
+                            <td>
+                                <h5 class="title" id="gear_val"> </h5>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
                 <h5 class="title">Power</h5>
                 <!-- <p class="power" id="power">0</p> -->
                 <div class="progress">
-                  <div id="power_bar" class="progress-bar bg-success" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                  <div id="power_bar" class="progress-bar bg-success" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="1500"></div>
                 </div>
+                
+                
+                
 
                 <h5 class="title">RPM</h5>
                 <!-- <p class="rpm" id="rpm">0</p> -->
                 <div class="progress">
-                  <div id="rpm_bar" class="progress-bar bg-info" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120"></div>
+                  <div id="rpm_bar" class="progress-bar bg-info" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
                 </div>
 
                 <h5 class="title">Speed</h5>
                 <!-- <p class="speed" id="speed">0</p> -->
                 <div class="progress">
-                  <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
                 </div>
                 <h5 class="title">Heart-Rate</h5>
                 <!-- <p class="hr" id="hr">0</p> -->

@@ -11,7 +11,10 @@ globals:
     crr_ble: 0.0040
     cw_ble: 0.51
     wheel: 2.095
-    
+
+Servo:
+    nearest: 1278
+    widest: 1705
 
 server:
     port: 3000
@@ -27,4 +30,3 @@ simulation:
     g: 9.8067
     p: 1.225
     e: 0.97
-
