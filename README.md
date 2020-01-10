@@ -2,7 +2,12 @@
 * forked from https://github.com/360manu/kettlerUSB2BLE
 * and https://github.com/weinzmi/ergoFACE
 
-Outdated!!!! 
+This Project shall connect bike sensors and HR sensors to a Raspberry Pi.
+The Raspberry can connect to Zwift, Rouvy, Kinomap... as a FTMS machine (smart trainer)
+The Raspberry uses the callback from the Apps to set the resisance of the Cycling Trainer.(Sets a servo).
+I build a Resistance unit like Stac Zero. to be controlled.
+
+readme is outdated!!!! 
 
 ## prerequisites
 * RS232 to USB converter
