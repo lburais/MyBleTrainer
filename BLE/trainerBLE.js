@@ -155,7 +155,7 @@ class TrainerBLE extends EventEmitter {
 
     notifyFTMS (event) {
         this.ftms.notify(event);
-     //   this.csp.notify(event);
+    this.csp.notify(event);
 
     };
 
