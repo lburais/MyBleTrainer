@@ -37,14 +37,14 @@ class MyLaser extends EventEmitter {
                 //speed in m/sec
                 //timediff_1 = timediffms
                 spoke_speed_1 = distance  / (timediffms/1e6);
-              console.log('spoke_speed', spoke_speed_1, timediffms/1e6)
+//              console.log('spoke_speed', spoke_speed_1, timediffms/1e6)
                 if (!isNaN(spoke_speed_1)) {
                     if (spoke_speed_1 != spoke_speed_2) {
                         x = (spoke_speed_1 - spoke_speed_2)/((timediffms)/1e6);
                     }
                 } 
                 else { 
-                    console.log('NaNAlart') 
+//                    console.log('NaNAlart') 
                 }
                 spoke_speed_2 = spoke_speed_1;
                 return x;
@@ -56,15 +56,15 @@ class MyLaser extends EventEmitter {
                     newTick = tick;
                     if (oldTick != 0) {
                         const diff = pigpio.tickDiff(oldTick, newTick);
- //                     console.log('false?', diff);
-                        if ((((diff > diff_old * 1.2) || (diff > diff_old * 0.8)) || ((diff > 0 ) && (diff_old <= 0)) || (ma.length < 3)) && (Math.abs(diff) < 1e6)) {
+//                      console.log('false?', diff);
+                        if ((((diff < diff_old * 1.2) && (diff > diff_old * 0.8)) || ((diff > 0 ) && (diff_old <= 0)) || (ma.length < 3)) && (Math.abs(diff) < 1e6)) {
                             ma.push(diff);
                             diff_old = diff;
                             count_false = 0;
                             false_val =0;
                         }
                         else {
-  //                          console.log('false!');
+//                            console.log('false!');
                             if (diff < 1e6) {
                                 if (count_false < 3) {
                                     count_false += 1;
@@ -87,7 +87,7 @@ class MyLaser extends EventEmitter {
                         const ma_average = sum / ma.length;
                         accel = this.acceleration(ma_average);
 //                      console.log('ma_average: ', ma_average, ' ', ma[0], ' ', ma[1], ' ', ma[2]);
-                      console.log('acceleration in m/s²: ', accel);
+//                      console.log('acceleration in m/s²: ', accel);
                         if ((Math.abs(accel) < 3) && accel > 0 ) {
                             if (accel > 0.02 && accel_bool == false) { 
                                 accel_bool = true;
