@@ -149,6 +149,10 @@
       socket.on('program', function (data) {
         $('#program').text("Program: " + data);
       });
+        socket.on('measured', function () {
+            document.getElementById("measuring_start").value = "Start";
+            document.getElementById("measuring_start").disabled = false;
+        });
       socket.on('preset_servo', function (data) {
                  addAlert_key(data[0] + ' ' + data[1]);
         document.getElementById("range_servo_min").value = data[0];
@@ -205,6 +209,12 @@
             socket.emit('measuring', 'off');
           }
           return false;
+        });
+        $('#measuring_start').click(function(){
+            document.getElementById("measuring_start").value = "wait";
+            document.getElementById("measuring_start").disabled = true;
+            socket.emit('measuring_start', 'measuring_start');
+            return false;
         });
         
         

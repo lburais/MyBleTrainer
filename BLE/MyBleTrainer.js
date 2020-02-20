@@ -2,7 +2,7 @@
 //"use strict";
 process.env.NOBLE_HCI_DEVICE_ID="0"
 process.env.NOBLE_MULTI_ROLE=1
-//process.env.NOBLE_REPORT_ALL_HCI_EVENTS=1
+process.env.NOBLE_REPORT_ALL_HCI_EVENTS=1
 const noble = require('noble');
 const serviceUuids = ['1816','180d'];
 var exitHandlerBound = false;
@@ -178,7 +178,7 @@ class MyBleTrainer extends EventEmitter {
         let CwaRider = (1 + ble_data.rpm * 0.002) * 0.82 * adipos * (((1.75 - adipos) * 0.89) + adipos);  // ridersize 1.75., ccad 0.002
         let Ka = 176.5 * Math.exp(-350 * 0.0001253) * (CwaRider + CwaBike) / (273 + 20); //350 mNN, 20′C
         let power = 1.025 * speed_ms * (Ka * (Math.pow(speed_ms, 2) ) + Frg + speed_ms * 0.1*Math.cos(0)); // simplified - no wind,no slope
-        if (power> 5000) power = 5000 //cut fake
+        if (power> 5000) power = 0 //cut fake
         ble_data.power = power.toFixed(0)
     }
 

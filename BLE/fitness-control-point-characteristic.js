@@ -61,8 +61,11 @@ class FitnessControlPoint extends Bleno.Characteristic {
   }
 
   // Follow Control Point instruction from the client
-  onWriteRequest (data, offset, withoutResponse, callback) {
+  //onWriteRequest (data, offset, withoutResponse, callback) {
+    onWriteRequest (data, offset, withoutResponse, callback) {
+    
     var state = data.readUInt8(0)
+    console.log('[control point.js] - data ' +  data.toString('hex'))
     switch (state) {
       case ControlPointOpCode.requestControl:
         if (DEBUG) console.log('[fitness-control-point-characteristic.js] - ControlPointOpCode.requestControl.')
@@ -154,7 +157,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
   // Return the result message
   buildResponse (opCode, resultCode) {
     var buffer = new Buffer.alloc(3)
-    buffer.writeUInt8(0x80, 0)
+    buffer.writeUInt8(0x08, 0)
     buffer.writeUInt8(opCode, 1)
     buffer.writeUInt8(resultCode, 2)
     return buffer

@@ -60,7 +60,7 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
     // 01000000 - 64  - 0x040 - Extreme Force Magnitudes Present
     // 10000000 - 128 - 0x080 - Extreme Torque Magnitudes Present
 
-    buffer.writeUInt16LE(0x0030, 0);
+    buffer.writeUInt16LE(0x0000, 0);
    // buffer[1] |= (1 << 0)
    // buffer[1] |= (1 << 1)
 
@@ -69,7 +69,7 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
       if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - power: ' + power);
       buffer.writeInt16LE(power, 2);
     }
-
+/*
     if ('raw' in event) {
       
     //  if (DEBUG) 
@@ -86,7 +86,14 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
         buffer.writeUInt16LE(event.raw.readUInt16LE(9), 12)
          if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - buffer: ' + buffer.toString('hex'));
     }
+*/
 
+    if ('rpm' in event) {
+      var rpm = event.rpm
+      if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - rpm: ' + event.rpm)
+      buffer.writeUInt16LE(rpm, 4)
+    }
+    
     if (this._updateValueCallback) {
       this._updateValueCallback(buffer);
     }

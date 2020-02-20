@@ -1,20 +1,25 @@
 DEBUG:
     daumUSB: false
-    server: false
+    server: true
     BLE: false
-    FC: false
-    Trainer: false
+    FC: true
+    Trainer: true
 
 globals:
     windspeed_ble: 1
     grade_ble: 1
     crr_ble: 0.0040
     cw_ble: 0.51
-    wheel: 2.095
+    wheel: 2.199
+    rim: 2.074
+    spokes: 24
+    wheel_weight: 1.068
+    m_Rider: 72
+    m_Bike: 9.5
 
 Servo:
-    nearest: 1278
-    widest: 1705
+    nearest: 1531
+    widest: 1770
 
 server:
     port: 3000

@@ -46,7 +46,7 @@ var gearvalue = widest
 var brforce = 0;  // breacking force init
 var watt=25;
 var speedms = 0.0; //init with lowest resistance
-var controlled = false;
+var controlled, settingservo, measuring = false;
 var trainerBLE; // wait for sensor befor start advertising
 var myBleTrainer = new MyBleTrainer()
 var myAntTrainer = new MyAntTrainer()
@@ -112,9 +112,11 @@ io.on('connection', socket => {
         if (DEBUG) console.log('[server.js] - new_gearval ' + data[0])
         myServo.setDirect(data);
     })
-  
-
-  
+    socket.on('measuring_start', function (data) {
+    measuring = true;
+    if (DEBUG) console.log('[server.js] - measuring started ')
+    // measuring = trainer
+  })
 })
 
 process.on('SIGINT', () => {
@@ -157,7 +159,7 @@ myBleTrainer.on('notified', data => {
     if ('rpm' in data) io.emit('rpm', data.rpm);
     if ('speed' in data) {
         speedms = Number(data.speed/3.6).toFixed(4);
-        myServo.getSpeed(data.speed, watt)
+      //  myServo.getSpeed(data.speed, watt)
 
         io.emit('speed', data.speed);
     }
@@ -171,7 +173,7 @@ myBleTrainer.on('notified', data => {
     }
     if ('hr' in data) io.emit('hr', data.hr);
     trainerBLE.notifyFTMS(data)
-    trainerBLE.notifyCSP(data)
+ //   trainerBLE.notifyCSP(data)
 });
 
 myAntTrainer.on('notifications_true', () => {
@@ -185,7 +187,7 @@ myAntTrainer.on('notified', data => {
     if ('rpm' in data) io.emit('rpm', data.rpm.toFixed(0));
     if ('speed' in data) {
         speedms = Number(data.speed/3.6).toFixed(4);
-        myServo.getSpeed(data.speed, watt)
+        //myServo.getSpeed(data.speed, watt)
 
         io.emit('speed', data.speed.toFixed(1));
     }
@@ -197,9 +199,24 @@ myAntTrainer.on('notified', data => {
     } else {
         io.emit('power', data.power);
     }
+    
     if ('hr' in data) io.emit('hr', data.hr);
-    trainerBLE.notifyFTMS(data)
-    trainerBLE.notifyCSP(data)
+    
+    if (!measuring) {
+        trainerBLE.notifyFTMS(data)
+     //   trainerBLE.notifyCSP(data)
+    } 
+    else {
+        measuring = trainerBLE.measure(data);
+        io.emit('key', '[server.js] - measured?')
+        if (!measuring) {
+            io.emit('measured')
+            io.emit('key', '[server.js] - yes!')
+        }
+
+
+    }
+    
 });
 
 
@@ -227,7 +244,7 @@ function serverCallback (message, ...args) {
     if (DEBUG) console.log('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
         watt = args[0]
-        if (!settingservo) brforce=myServo.setWatt(watt);
+        if (!settingservo || !measuring) brforce=myServo.setWatt(watt);
         
        if (DEBUG) console.log('[server.js] - Bike in ERG Mode - set Power to: ', watt)
         io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)
@@ -259,9 +276,12 @@ function serverCallback (message, ...args) {
         var forceaerodynamic = 0.5 * cw * p * Math.pow((cspeed + wind), 2)
         var force = forceofgravity + forcerollingresistance + forceaerodynamic
         if (DEBUG) console.log('[server.js] - force ' +  cspeed)
-      io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + power)
-      io.emit('simpower', power)
-      io.emit('control', 'SIM MODE')
+        if (!settingservo || !measuring) {
+            io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + force) //power
+            io.emit('simpower', force) //power
+            io.emit('control', 'SIM MODE')
+                
+        }
       success = true
       break
   }
