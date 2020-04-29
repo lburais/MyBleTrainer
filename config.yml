@@ -1,7 +1,7 @@
 DEBUG:
     daumUSB: false
     server: true
-    BLE: false
+    BLE: true
     FC: true
     Trainer: true
 

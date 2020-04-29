@@ -1,25 +1,45 @@
 {
   "name": "VirtualSmartTrainer",
   "version": "0.6.5",
-  "description": "Bridge for speed/cadence/pm sensors to zwist to control a trainer",
+  "description": "Bridge between USB trainer and BLE client",
+  "keywords": "Tacx T1932 FTMS",
+  "bugs": {
+    "email": "laurent@burais.fr"
+  },
+  "author": {
+    "name": "Laurent Burais",
+    "email": "laurent@burais.fr"
+  },
+  "license": "MIT",
   "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lburais/MyBleTrainer.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "author": "jo",
-  "license": "MIT",
   "dependencies": {
+    "bleno": "git+https://github.com/abandonware/bleno.git",
+    "bluetooth-hci-socket": "git+https://github.com/abandonware/node-bluetooth-hci-socket.git",
+    "noble": "git+https://github.com/abandonware/noble.git",
     "ant-plus": "latest",
-    "bleno": "^0.5.0",
-    "bluetooth-hci-socket": "latest",
     "config-yml": "^0.10.3",
+    "async": "^3.2.0",
     "ejs": "^3.0.1",
+    "i2c-bus": "^5.1.0",
+    "input-event": "^1.2.6",
     "express": "^4.17.1",
-    "noble": "^1.9.1",
+    "nodemon": "^1.14.3",
     "pigpio": "^2.0.1",
     "q": "^1.4.1",
+    "oled-font-5x7": "^1.0.3",
+    "oled-i2c-bus": "^1.0.11",
     "socket.io": "^2.3.0",
-    "utf-8-validate": "^5.0.2"
+    "serialport": "^8.0.7",
+    "utf-8-validate": "^5.0.2",
+    "rpi-gpio": "latest",
+    "onoff": "latest"
   }
 }
