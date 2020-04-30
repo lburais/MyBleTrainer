@@ -83,6 +83,12 @@ server.listen(process.env.PORT || 3000, function () { // for getting IP dynamica
 // VirtualTrainer instantiation
 // /////////////////////////////////////////////////////////////////////////
 
+var trainerBLE; // wait for sensor befor start advertising
+
+// /////////////////////////////////////////////////////////////////////////
+// BLE, Servo and Ant instantiation
+// /////////////////////////////////////////////////////////////////////////
+
 var myServo = new MyServo();
 myServo.setGear(1);
 
@@ -92,7 +98,6 @@ var watt=25;
 var speedms = 0.0; //init with lowest resistance
 var controlled, settingservo, measuring = false;
 
-var trainerBLE; // wait for sensor befor start advertising
 var myBleTrainer = new MyBleTrainer()
 var myAntTrainer = new MyAntTrainer()
 
@@ -102,7 +107,7 @@ var myAntTrainer = new MyAntTrainer()
 
 var daumUSB = new DaumUSB()
 var daumSIM = new DaumSIM()
-var daumBLE = new DaumBLE(serverCallback)
+//var daumBLE = new DaumBLE(serverCallback)
 var daumObs = daumUSB.open()
 
 // /////////////////////////////////////////////////////////////////////////
@@ -110,7 +115,7 @@ var daumObs = daumUSB.open()
 // /////////////////////////////////////////////////////////////////////////
 
 var kettlerUSB = new kettlerUSB();
-var kettlerBLE = new KettlerBLE(serverCallback);
+//var kettlerBLE = new KettlerBLE(serverCallback);
 
 
 // /////////////////////////////////////////////////////////////////////////
@@ -355,6 +360,7 @@ function trainerBLEinit () {
   trainerBLE.on('disconnect', string => {
     io.emit('control', 'disconnected')
     controlled = false;
+    oled.displayBLE('Disconnected');
   });
 
   trainerBLE.on('key', string => {
@@ -366,33 +372,43 @@ function trainerBLEinit () {
     if (DEBUG) console.log('[server.js] - error: ' + string)
     io.emit('error', '[server.js] - ' + string)
   })
+
+  trainerBLE.on('accept', string => {
+    oled.displayBLE('Connected');
+    io.emit('accept', '[server.js] - ' + string)
+  })
+    
+  trainerBLE.on('accept', string => {
+  	oled.displayBLE('Started');
+    io.emit('accept', '[server.js] - ' + string)
+  })
 }
 
-// Daum BLE
 
-daumBLE.on('key', string => {
-  if (DEBUG) console.log('[server.js] - error: ' + string)
-  io.emit('key', '[server.js] - ' + string)
-})
 
-daumBLE.on('error', string => {
-  if (DEBUG) console.log('[server.js] - error: ' + string)
-  io.emit('error', '[server.js] - ' + string)
-})
+// daumBLE.on('key', string => {
+//   if (DEBUG) console.log('[server.js] - error: ' + string)
+//   io.emit('key', '[server.js] - ' + string)
+// })
+
+// daumBLE.on('error', string => {
+//   if (DEBUG) console.log('[server.js] - error: ' + string)
+//   io.emit('error', '[server.js] - ' + string)
+// })
 
 //--- Kettler BLE
 
-kettlerBLE.on('advertisingStart', (client) => {
-	oled.displayBLE('Started');
-});
+// kettlerBLE.on('advertisingStart', (client) => {
+// 	oled.displayBLE('Started');
+// });
 
-kettlerBLE.on('accept', (client) => {
-	oled.displayBLE('Connected');
-});
+// kettlerBLE.on('accept', (client) => {
+// 	oled.displayBLE('Connected');
+// });
 
-kettlerBLE.on('disconnect', (client) => {
-	oled.displayBLE('Disconnected');
-});
+// kettlerBLE.on('disconnect', (client) => {
+// 	oled.displayBLE('Disconnected');
+// });
 
 
 // /////////////////////////////////////////////////////////////////////////

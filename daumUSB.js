@@ -150,11 +150,12 @@ function daumUSB () {
   // open port as specified by daum
   // /////////////////////////////////////////////////////////////////////////
   this.open = function () {
-    com.list(function (err, ports) {
-      if (err) {
-        self.emitter.emit('error', '[daumUSB.js] - open: ' + err)
-        throw err
-      }
+    //com.list(function (err, ports) {
+    com.list().then(ports => {
+      //if (err) {
+      //  self.emitter.emit('error', '[daumUSB.js] - open: ' + err)
+      //  throw err
+      //}
       ports.forEach(function (p) {
         if (p.vendorId && p.productId) { // ??? don't know if this is the ID of ergobike, or the serial adapter, this has to be configured for every bike, so I might skip it
           if (DEBUG) console.log('[daumUSB.js] - open:' + p.vendorId + '  ' + p.productId) // RS232 converter Ids
