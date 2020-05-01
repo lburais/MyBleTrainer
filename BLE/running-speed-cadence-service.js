@@ -11,7 +11,7 @@
  */ 
 const Bleno = require('bleno');
 
-const RSCMeasurementCharacteristic = require('./rsc-measurement-characteristic');
+const RSCMeasurementCharacteristic = require('./running-speed-cadence-measurement-characteristic');
 const StaticReadCharacteristic = require('./static-read-characteristic');
 
 class RSCService extends Bleno.PrimaryService {
