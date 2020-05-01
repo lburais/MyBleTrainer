@@ -1,14 +1,14 @@
 class DIS {
     constructor(options) {
         options = options || { };
-        this.name = options.name || 'Pi Smart Trainer';
-        this.systemId = options.systemId || '12345678954631';
-        this.modelNumber = options.modelNumber || '0.1';
-        this.serialNumber = options.serialNumber || '0.1';
-        this.firmwareRevision = options.firmwareRevision || '0.1';
-        this.hardwareRevision = options.hardwareRevision || '0.1';
-        this.softwareRevision = options.softwareRevision || '0.1';
-        this.manufacturerName = options.manufacturerName || 'Jo';
+        this.name = options.name || 'Smart Trainer Bridge';
+        this.systemId = options.systemId || '1';
+        this.modelNumber = options.modelNumber || 'NA';
+        this.serialNumber = options.serialNumber || 'NA';
+        this.firmwareRevision = options.firmwareRevision || 'Dietpi';
+        this.hardwareRevision = options.hardwareRevision || '> Rpi 3+';
+        this.softwareRevision = options.softwareRevision || 'node 14.0';
+        this.manufacturerName = options.manufacturerName || 'nodejs';
         this.certification = options.certification || 0;
         this.pnpId = options.pnpId || 0;
     }

@@ -20,7 +20,7 @@ equipments:
     daumUSB: false
     kettlerUSB: false
     Servo: false
-    Simulator: true
+    Simulator: false
     ANT: false
     BLE: false
     tacxUSB: false

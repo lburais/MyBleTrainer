@@ -613,7 +613,7 @@ trainerBLEinit()
 
 function trainerBLEinit () {
   trainerBLE = new TrainerBLE(options = {
-    name: 'Virtual Trainer'
+    name: 'Smart Trainer Bridge'
   },serverCallback)
 
   trainerBLE.on('disconnect', string => {

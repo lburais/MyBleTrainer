@@ -9,6 +9,7 @@ const RunningSpeedCadenceService = require('./running-speed-cadence-service');
 const config = require('config-yml');
 
 var DEBUG = config.DEBUG.Trainer;
+
 var rim = config.globals.rim;
 var wheel_weight = config.globals.wheel_weight;
 var wheel_time_1, wheel_time_2, wheel_time_3 = 0;
@@ -26,8 +27,8 @@ class TrainerBLE extends EventEmitter {
 
     this.ftms = new FitnessMachineService(serverCallback);
     this.dis = new DeviceInformationService(options);
-    //this.rsc = new RunningSpeedCadenceService();
-    //this.csp = new CyclingPowerService();
+    this.rsc = new RunningSpeedCadenceService();
+    this.csp = new CyclingPowerService();
     
     let self = this;
     if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - BLE server starting`);
@@ -44,7 +45,7 @@ class TrainerBLE extends EventEmitter {
                 self.ftms.uuid,
                 self.dis.uuid,
                 self.csp.uuid,
-                self.RunningSpeedCadence.uuid
+                self.rsc.uuid
         ])
       } else {
         if (DEBUG) console.log('Stopping...');
@@ -62,7 +63,7 @@ class TrainerBLE extends EventEmitter {
                 self.ftms, 
                 self.dis,
                 self.csp,
-                self.RunningSpeedCadence
+                self.rsc
           ],
           (error) => {
             if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`)
