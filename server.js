@@ -19,71 +19,113 @@ var bleDEBUG = (config.DEBUG.BLE || DEBUG)
 
 var daumRUN = config.equipments.daumUSB
 var kettlerRUN = config.equipments.kettlerUSB
-var servoRUN = config.equipments.Servo
+var servoRUN = config.equipments.servoGPIO
 var simulatorRUN = config.equipments.Simulator
-var antRUN = config.equipments.ANT
-var bleRUN = config.equipments.BLE
+var antRUN = config.equipments.trainerANT
+var bleRUN = config.equipments.trainerBLE
 var tacxRUN = config.equipments.tacxUSB
 
 // ////////////////////////////////////////////////////////////////////////
 // VirtualTrainer specific
 // ////////////////////////////////////////////////////////////////////////
 
-var TrainerBLE = require('./BLE/trainerBLE')
 
-// ////////////////////////////////////////////////////////////////////////
-// Bridge specific
-// ////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////
+// Smart Trainer instantiation
+// /////////////////////////////////////////////////////////////////////////
 
-var MyBleTrainer = require('./BLE/MyBleTrainer')
-var MyAntTrainer = require('./MyAntTrainer')
+var smarttrainer = require('./BLE/smart-trainer')
+var smart_trainer; // wait for sensor befor start advertising
 
-// ////////////////////////////////////////////////////////////////////////
-// Servo specific
-// ////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////
+// Bridge instantiation
+// /////////////////////////////////////////////////////////////////////////
 
-var MyServo = require('./BLE/MyServo')
-
-var nearest = config.Servo.nearest
-var widest = config.Servo.widest
-
-// ////////////////////////////////////////////////////////////////////////
-// Kettler specific
-// ////////////////////////////////////////////////////////////////////////
-
-var kettlerUSB = require('./kettlerUSB')
-var KettlerBLE = require('./BLE/kettlerBLE')
-var BikeState = require('./BikeState')
-var Oled = require('./OledInfo')
-var Button = require('./lib/rpi_gpio_buttons')
-
-// ////////////////////////////////////////////////////////////////////////
-// Daum specific
-// ////////////////////////////////////////////////////////////////////////
-
-var DaumUSB = require('./daumUSB')
-var DaumSIM = require('./daumSIM')
-var DaumBLE = require('./BLE/daumBLE')
-
-var Gpio = require('onoff').Gpio
-
-var shiftUp = null
-var shiftDown = null
-if (daumRUN) {
-  shiftUp = new Gpio(4, 'in', 'rising', { debounceTimeout: 10 }) // hardware switch for shifting up gears
-  shiftDown = new Gpio(17, 'in', 'rising', { debounceTimeout: 10 }) // hardware switch for shifting down gears
+if (bleRUN) { 
+  var trainerBLE = require('./trainers/trainerBLE')
+  var trainer_ble = new trainerBLE()
 }
 
-global.globalspeed_daum = 0
-global.globalrpm_daum = 0
-global.globalgear_daum = 1
-global.globalsimpower_daum = 0
-global.globalwindspeed_ble = 0
-global.globalgrade_ble = 0
-global.globalcrr_ble = 0.0040 // set once to have simulation available without BLE connected to apps
-global.globalcw_ble = 0.51 // set once to have simulation available without BLE connected to apps
-global.globalmode = 'SIM' // set this as default start mode here; in this mode ,ergoFACE is going to startup
-global.globalswitch = 'Gear' // set this as default start mode here; in this mode ,ergoFACE is going to startup
+if (antRUN)  {
+  var trainerANT = require('./trainers/trainerANT')
+  var trainer_ant = new trainerANT()
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// Servo instantiation
+// /////////////////////////////////////////////////////////////////////////
+
+if (servoRUN) {
+  var servoGPIO = require('./trainers/servoGPIO')
+
+  var nearest = config.Servo.nearest
+  var widest = config.Servo.widest
+
+  var servo_gpio = new servoGPIO();
+  servo_gpio.setGear(1);
+
+  var gearvalue = widest
+  var brforce = 0;  // breacking force init
+  var watt=25;
+  var speedms = 0.0; //init with lowest resistance
+  var controlled, settingservo, measuring = false;
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// Kettler instantiation
+// /////////////////////////////////////////////////////////////////////////
+
+if (kettlerRUN) {
+  var kettlerUSB = require('./trainers/kettlerUSB')
+  var kettlerBIKE = require('./trainers/kettlerBIKE')
+  var kettlerOLED = require('./trainers/kettlerOLED')
+  var rpi_gpio_buttons = require('./lib/rpi_gpio_buttons')
+
+  var kettler_usb = new kettlerUSB()
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// Daum instantiation
+// /////////////////////////////////////////////////////////////////////////
+
+if (daumRUN){
+  var daumUSB = require('./trainers/daumUSB')
+  var daumSIM = require('./trainers/daumSIM')
+
+  var Gpio = require('onoff').Gpio
+
+  var shiftUp = null
+  var shiftDown = null
+
+  shiftUp = new Gpio(4, 'in', 'rising', { debounceTimeout: 10 }) // hardware switch for shifting up gears
+  shiftDown = new Gpio(17, 'in', 'rising', { debounceTimeout: 10 }) // hardware switch for shifting down gears
+
+  global.globalspeed_daum = 0
+  global.globalrpm_daum = 0
+  global.globalgear_daum = 1
+  global.globalsimpower_daum = 0
+  global.globalwindspeed_ble = 0
+  global.globalgrade_ble = 0
+  global.globalcrr_ble = 0.0040 // set once to have simulation available without BLE connected to apps
+  global.globalcw_ble = 0.51 // set once to have simulation available without BLE connected to apps
+  global.globalmode = 'SIM' // set this as default start mode here; in this mode ,ergoFACE is going to startup
+  global.globalswitch = 'Gear' // set this as default start mode here; in this mode ,ergoFACE is going to startup
+
+  var daum_sim = new daumSIM()
+  var daum_usb = new daumUSB()
+  var daum_obs = daum_usb.open()
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// Tacx instantiation
+// /////////////////////////////////////////////////////////////////////////
+
+if (tacxRUN) {
+  var tacxUSB = require('./trainers/tacxUSB')
+  
+  var tacx_usb = new tacxUSB()
+  var tacx_obs = tacx_usb.open()
+}
 
 // /////////////////////////////////////////////////////////////////////////
 // server path specification
@@ -102,87 +144,11 @@ app.get('/', function (req, res) {
 // server start listening to port 3000
 // /////////////////////////////////////////////////////////////////////////
 
-server.listen(process.env.PORT || 3000, function () { // for getting IP dynamicaly in index.ejs and not to enter it manually
+server.listen(process.env.PORT || 3000, function () { 
+  // for getting IP dynamicaly in index.ejs and not to enter it manually
   if (serverDEBUG) console.log('[server.js] - listening on port 3000!')
 })
  
-// /////////////////////////////////////////////////////////////////////////
-// VirtualTrainer instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var trainerBLE; // wait for sensor befor start advertising
-
-// /////////////////////////////////////////////////////////////////////////
-// Bridge instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var myBleTrainer = null
-if (bleRUN) {
-  myBleTrainer = new MyBleTrainer()
-}
-
-var myAntTrainer = null
-if (antRUN) {
-  myAntTrainer = new MyAntTrainer()
-}
-
-// /////////////////////////////////////////////////////////////////////////
-// Servo instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var myServo = null
-if (servoRUN) {
-  myServo = new MyServo();
-  myServo.setGear(1);
-}
-
-var gearvalue = widest
-var brforce = 0;  // breacking force init
-var watt=25;
-var speedms = 0.0; //init with lowest resistance
-var controlled, settingservo, measuring = false;
-
-// /////////////////////////////////////////////////////////////////////////
-// Simulator instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var daumSIM = null
-if (simulatorRUN) {
-  daumSIM = new DaumSIM()
-}
-
-// /////////////////////////////////////////////////////////////////////////
-// Daum instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var daumUSB = null
-var daumObs = null
-if (daumRUN) {
-  daumUSB = new DaumUSB()
-  daumObs = daumUSB.open()
-}
-//var daumBLE = new DaumBLE(serverCallback)
-
-// /////////////////////////////////////////////////////////////////////////
-// Kettler instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var kettlerUSB = null
-if (kettlerRUN) {
-  kettlerUSB = new kettlerUSB()
-}
-//var kettlerBLE = new KettlerBLE(serverCallback);
-
-// /////////////////////////////////////////////////////////////////////////
-// Tacx instantiation
-// /////////////////////////////////////////////////////////////////////////
-
-var tacxUSB = null
-if (tacxRUN) {
-  // tacxUSB = new tacxUSB()
-  // var tacxBLE = new tacxBLE(serverCallback)
-}
-
 // /////////////////////////////////////////////////////////////////////////
 // Web server callback, listen for actions taken at the server GUI, 
 // not from Ant, Daum or BLE
@@ -200,12 +166,12 @@ io.on('connection', socket => {
     if (serverDEBUG) console.log('[server.js] - restart')
     if (daumRUN) {
       geargpio = 1
-      daumUSB.setGear(geargpio)
-      setTimeout(daumUSB.restart, 1000)
+      daum_usb.setGear(geargpio)
+      setTimeout(daum_usb.restart, 1000)
     }
     if (servoRUN){
       gear = 1
-      myServo.setGear(gear)
+      servo_gpio.setGear(gear)
     }
     io.emit('key', '[server.js] - restart')
   })
@@ -213,22 +179,22 @@ io.on('connection', socket => {
   socket.on('reco', function (data) {
     if (serverDEBUG) console.log('[server.js] - reconnect')
     if (servoRUN) gear = 1
-    if (bleRUN) myBleTrainer.recon()
-    trainerBLEinit ()
+    if (bleRUN) trainer_ble.recon()
+    smart_trainer_init ()
     io.emit('key', '[server.js] - reconnect')
   })
 
   socket.on('stop', function (data) {
     if (serverDEBUG) console.log('[server.js] - stop')
-    if (daumRUN) daumUSB.stop()
+    if (daumRUN) daum_usb.stop()
     io.emit('key', '[server.js] - stop')
   })
 
   socket.on('setGear', function (data) {
     if (serverDEBUG) console.log('[server.js] - set Gear')
     gear = data
-    if (daumRUN) daumUSB.setGear(gear)
-    if (servoRUN) myServo.setGear(gear)
+    if (daumRUN) daum_usb.setGear(gear)
+    if (servoRUN) servo_gpio.setGear(gear)
     io.emit('raw', '[server.js] - set Gear: ' + gear)
   })
 
@@ -255,12 +221,12 @@ io.on('connection', socket => {
         else {
             widest = data[0];
         }
-        myServo.setLimit(data);
+        servo_gpio.setLimit(data);
     })
 
     socket.on('new_gear_val', function (data) {
         if (serverDEBUG) console.log('[server.js] - new_gearval ' + data[0])
-        myServo.setDirect(data);
+        servo_gpio.setDirect(data);
     })
 
     socket.on('measuring_start', function (data) {
@@ -275,7 +241,7 @@ io.on('connection', socket => {
     socket.on('setProgram', function (data) {
       if (serverDEBUG) console.log('[server.js] - set Program')
       var programID = data
-      daumUSB.setProgram(programID)
+      daum_usb.setProgram(programID)
       io.emit('key', '[server.js] - set Program ID: ' + programID)
     })
 
@@ -318,13 +284,13 @@ if (daumRUN) {
     }
     if (value) {
       if (global.globalswitch === 'Power') { // if mode is set to 'power', we increment watt
-        daumUSB.setWattProfile(0) // increment power
+        daum_usb.setWattProfile(0) // increment power
         if (serverDEBUG) console.log('[server.js] - increment Power')
         io.emit('raw', '[server.js] - increment Power')
       } else { // if mode is set to 'gear', we increment gears
         if (geargpio < maxGear) {
           geargpio = geargpio + ratio // shift n gears at a time, to avoid too much shifting
-          daumUSB.setGear(geargpio)
+          daum_usb.setGear(geargpio)
           if (serverDEBUG) console.log('[server.js] - Shift to Gear: ' + geargpio)
           io.emit('raw', '[server.js] - Shift to Gear: ' + geargpio)
         }
@@ -342,13 +308,13 @@ if (daumRUN) {
     }
     if (value) {
       if (global.globalswitch === 'Power') { // if mode is set to 'power', we decrement watt
-        daumUSB.setWattProfile(1) // decrement power
+        daum_usb.setWattProfile(1) // decrement power
         if (serverDEBUG) console.log('[server.js] - decrement Power')
         io.emit('raw', '[server.js] - decrement Power')
       } else { // if mode is set to 'gear', we degrement gears
         if (geargpio > minGear) {
           geargpio = geargpio - ratio // sift n gears at a time, to avoid too much shifting
-          daumUSB.setGear(geargpio)
+          daum_usb.setGear(geargpio)
           if (serverDEBUG) console.log('[server.js] - Shift to Gear: ' + geargpio)
           io.emit('raw', '[server.js] - Shift to Gear: ' + geargpio)
         }
@@ -365,47 +331,47 @@ if (daumRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (kettlerRUN) {
-  //--- Buttons
-  var button = new Button(7);
-  button.on('clicked', function () {
-    bikeState.GearUp();
+  //--- buttons
+  var kettlerBUTTON = new rpi_gpio_buttons(7);
+  kettlerBUTTON.on('clicked', function () {
+    kettlerBIKE.GearUp();
   });
 
-  var button = new Button(11);
-  button.on('clicked', function () {
-    bikeState.GearDown();
+  var kettlerBUTTON = new rpi_gpio_buttons(11);
+  kettlerBUTTON.on('clicked', function () {
+    kettlerBIKE.GearDown();
   });
   
-  //--- Oled Screen
-  var oled = new Oled();
+  //--- kettlerOLED Screen
+  var kettlerOLED = new kettlerOLED();
 
   //--- Machine State
-  var bikeState = new BikeState();
+  var kettlerBIKE = new kettlerBIKE();
   // un peu de retour serveur
-  bikeState.on('mode', (mode) => {
+  kettlerBIKE.on('mode', (mode) => {
     io.emit('mode', mode);
   });
 
-  bikeState.on('gear', (gear) => {
+  kettlerBIKE.on('gear', (gear) => {
     io.emit('gear', gear);
-    oled.displayGear(gear);
+    kettlerOLED.displayGear(gear);
   });
 
-  bikeState.on('grade', (grade) => {
+  kettlerBIKE.on('grade', (grade) => {
     io.emit('grade', grade + '%');
-    oled.displayGrade(grade);
+    kettlerOLED.displayGrade(grade);
   });
 
-  bikeState.on('windspeed', (windspeed) => {
+  kettlerBIKE.on('windspeed', (windspeed) => {
     io.emit('windspeed', windspeed);
   });
 
-  bikeState.on('simpower', (simpower) => {
-    kettlerUSB.setPower(simpower);
+  kettlerBIKE.on('simpower', (simpower) => {
+    kettler_usb.setPower(simpower);
   });
 
   // first state
-  bikeState.setGear(4);
+  kettlerBIKE.setGear(4);
 }
 
 // /////////////////////////////////////////////////////////////////////////
@@ -413,17 +379,17 @@ if (kettlerRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (bleRUN) {
-  myBleTrainer.on('notifications_true', () => {
-    trainerBLEinit ()
+  trainer_ble.on('notifications_true', () => {
+    smart_trainer_init ()
   });
 
-  myBleTrainer.on('notified', data => {
+  trainer_ble.on('notified', data => {
     // recalculate power if BLE controlled? P = F * v
     
     if ('rpm' in data) io.emit('rpm', data.rpm)
     if ('speed' in data) {
       speedms = Number(data.speed/3.6).toFixed(4)
-      //  myServo.getSpeed(data.speed, watt)
+      //  servo_gpio.getSpeed(data.speed, watt)
 
       io.emit('speed', data.speed);
     }
@@ -437,8 +403,8 @@ if (bleRUN) {
     }
     if ('hr' in data) io.emit('hr', data.hr)
 
-    trainerBLE.notifyFTMS(data)
-    trainerBLE.notifyCSP(data)
+    smart_trainer.notifyFTMS(data)
+    smart_trainer.notifyCSP(data)
   })
 }
 
@@ -447,18 +413,18 @@ if (bleRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (antRUN) {
-  myAntTrainer.on('notifications_true', () => {
-    trainerBLEinit ();
-    myBleTrainer.discon(); //prefer Ant over BLE Sensors
+  trainer_ant.on('notifications_true', () => {
+    smart_trainer_init ();
+    trainer_ble.discon(); //prefer Ant over BLE Sensors
   });
 
-  myAntTrainer.on('notified', data => {
+  trainer_ant.on('notified', data => {
     // recalculate power if BLE controlled? P = F * v
     
     if ('rpm' in data) io.emit('rpm', data.rpm.toFixed(0))
     if ('speed' in data) {
         speedms = Number(data.speed/3.6).toFixed(4)
-        //myServo.getSpeed(data.speed, watt)
+        //servo_gpio.getSpeed(data.speed, watt)
 
         io.emit('speed', data.speed.toFixed(1))
     }
@@ -473,11 +439,11 @@ if (antRUN) {
     if ('hr' in data) io.emit('hr', data.hr)
     
     if (!measuring) {
-      trainerBLE.notifyFTMS(data)
-      trainerBLE.notifyCSP(data)
+      smart_trainer.notifyFTMS(data)
+      smart_trainer.notifyCSP(data)
     } 
     else {
-      measuring = trainerBLE.measure(data)
+      measuring = smart_trainer.measure(data)
       io.emit('key', '[server.js] - measured?')
       if (!measuring) {
         io.emit('measured')
@@ -488,59 +454,26 @@ if (antRUN) {
 }
 
 // /////////////////////////////////////////////////////////////////////////
-// Daum USB Obs
-// /////////////////////////////////////////////////////////////////////////
-
-if (daumRUN) {
-  daumObs.on('error', string => {
-    if (serverDEBUG) console.log('[server.js] - error: ' + string)
-    io.emit('error', '[server.js] - ' + string)
-  })
-
-  daumObs.on('key', string => {
-    if (serverDEBUG) console.log('[server.js] - key: ' + string)
-    io.emit('key', '[server.js] - ' + string)
-  })
-
-  daumObs.on('raw', string => {
-    if (serverDEBUG) console.log('[server.js] - raw: ', string)
-    io.emit('raw', string.toString('hex'))
-    io.emit('version', version) // emit version number to webserver
-  })
-
-  daumObs.on('data', data => { // get runData from daumUSB
-    if (serverDEBUG) console.log('[server.js] - data:' + JSON.stringify(data))
-    if ('speed' in data) io.emit('speed', data.speed)
-    if ('power' in data) io.emit('power', data.power)
-    if ('rpm' in data) io.emit('rpm', data.rpm)
-    if ('gear' in data) io.emit('gear', data.gear)
-    if ('program' in data) io.emit('program', data.program)
-    trainerBLE.notifyFTMS(data)
-    trainerBLE.notifyCSP(data)
-  })
-}
-
-// /////////////////////////////////////////////////////////////////////////
 // Kettler USB
 // /////////////////////////////////////////////////////////////////////////
 
 if (kettlerRUN) {
-  kettlerUSB.on('error', (string) => {
+  kettler_usb.on('error', (string) => {
     console.log('error : ' + string)
     io.emit('error', string)
   });
 
-  kettlerUSB.on('connecting', () => {
-    oled.displayUSB('connecting')
+  kettler_usb.on('connecting', () => {
+    kettlerOLED.displayUSB('connecting')
   });
 
-  kettlerUSB.on('start', () => {
-    oled.displayUSB('connected')
+  kettler_usb.on('start', () => {
+    kettlerOLED.displayUSB('connected')
   });
 
-  kettlerUSB.on('data', (data) => {
+  kettler_usb.on('data', (data) => {
     // keep
-    bikeState.setData(data)
+    kettlerBIKE.setData(data)
 
     // send to html server
     if ('speed' in data)
@@ -553,11 +486,44 @@ if (kettlerRUN) {
       io.emit('rpm', data.rpm)
 
     // send to BLE adapter
-    trainerBLE.notifyFTMS(data);
-    trainerBLE.notifyCSP(data);
+    smart_trainer.notifyFTMS(data);
+    smart_trainer.notifyCSP(data);
   })
 
-  kettlerUSB.open()
+  kettler_usb.open()
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// Daum USB Obs
+// /////////////////////////////////////////////////////////////////////////
+
+if (daumRUN) {
+  daum_obs.on('error', string => {
+    if (serverDEBUG) console.log('[server.js] - error: ' + string)
+    io.emit('error', '[server.js] - ' + string)
+  })
+
+  daum_obs.on('key', string => {
+    if (serverDEBUG) console.log('[server.js] - key: ' + string)
+    io.emit('key', '[server.js] - ' + string)
+  })
+
+  daum_obs.on('raw', string => {
+    if (serverDEBUG) console.log('[server.js] - raw: ', string)
+    io.emit('raw', string.toString('hex'))
+    io.emit('version', version) // emit version number to webserver
+  })
+
+  daum_obs.on('data', data => { // get runData from daum_usb
+    if (serverDEBUG) console.log('[server.js] - data:' + JSON.stringify(data))
+    if ('speed' in data) io.emit('speed', data.speed)
+    if ('power' in data) io.emit('power', data.power)
+    if ('rpm' in data) io.emit('rpm', data.rpm)
+    if ('gear' in data) io.emit('gear', data.gear)
+    if ('program' in data) io.emit('program', data.program)
+    smart_trainer.notifyFTMS(data)
+    smart_trainer.notifyCSP(data)
+  })
 }
 
 // /////////////////////////////////////////////////////////////////////////
@@ -565,80 +531,68 @@ if (kettlerRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (tacxRUN) {
-  tacxUSB.on('error', (string) => {
+  tacx_obs.on('error', string => {
     if (serverDEBUG) console.log('[server.js] - error: ' + string)
-    io.emit('error', string)
-  });
+    io.emit('error', '[server.js] - ' + string)
+  })
 
-  tacxUSB.on('connecting', () => {
-    if (serverDEBUG) console.log('[server.js] - connecting ')
-  });
-
-  tacxUSB.on('start', () => {
-    if (serverDEBUG) console.log('[server.js] - start ')
-  });
-
-  tacxUSB.on('key', string => {
+  tacx_obs.on('key', string => {
     if (serverDEBUG) console.log('[server.js] - key: ' + string)
     io.emit('key', '[server.js] - ' + string)
   })
 
-  tacxUSB.on('raw', string => {
+  tacx_obs.on('raw', string => {
     if (serverDEBUG) console.log('[server.js] - raw: ', string)
     io.emit('raw', string.toString('hex'))
     io.emit('version', version) // emit version number to webserver
   })
 
-  tacxUSB.on('data', (data) => {
-    // send to html server
-    if ('speed' in data) io.emit('speed', data.speed.toFixed(1))
+  tacx_obs.on('data', data => { // get runData from daum_usb
+    if (serverDEBUG) console.log('[server.js] - data:' + JSON.stringify(data))
+    if ('speed' in data) io.emit('speed', data.speed)
     if ('power' in data) io.emit('power', data.power)
-    if ('hr' in data) io.emit('hr', data.hr)
     if ('rpm' in data) io.emit('rpm', data.rpm)
     if ('gear' in data) io.emit('gear', data.gear)
     if ('program' in data) io.emit('program', data.program)
-    // send to BLE adapter
-    trainerBLE.notifyFTMS(data);
-    trainerBLE.notifyCSP(data);
+    smart_trainer.notifyFTMS(data)
+    smart_trainer.notifyCSP(data)
   })
-
-  tacxUSB.open()
 }
 
 // /////////////////////////////////////////////////////////////////////////
 // VirtualTrainer BLE : Bike information transfer to BLE & Webserver
 // /////////////////////////////////////////////////////////////////////////
 
-trainerBLEinit()
+smart_trainer_init()
 
-function trainerBLEinit () {
-  trainerBLE = new TrainerBLE(options = {
+function smart_trainer_init () {
+  smart_trainer = new smarttrainer(options = {
     name: 'Smart Trainer Bridge'
   },serverCallback)
 
-  trainerBLE.on('disconnect', string => {
+  smart_trainer.on('disconnect', string => {
     io.emit('control', 'disconnected')
     if (servoRUN) controlled = false
-    if (kettlerRUN) oled.displayBLE('Disconnected');
+    if (kettlerRUN) kettlerOLED.displayBLE('Disconnected');
   })
 
-  trainerBLE.on('key', string => {
+  smart_trainer.on('key', string => {
     if (serverDEBUG) console.log('[server.js] - key: ' + string)
     io.emit('key', '[server.js] - ' + string)
   })
 
-  trainerBLE.on('error', string => {
+  smart_trainer.on('error', string => {
     if (serverDEBUG) console.log('[server.js] - error: ' + string)
     io.emit('error', '[server.js] - ' + string)
   })
 
-  trainerBLE.on('accept', string => {
-    if (kettlerRUN) oled.displayBLE('Connected');
+  smart_trainer.on('accept', string => {
+    if (kettlerRUN) kettlerOLED.displayBLE('Connected');
     io.emit('accept', '[server.js] - ' + string)
   })
     
-  trainerBLE.on('accept', string => {
-  	if (kettlerRUN) oled.displayBLE('Started');
+  smart_trainer.on('accept', string => {
+  	if (kettlerRUN) kettlerOLED.displayBLE('Started');
     io.emit('accept', '[server.js] - ' + string)
   })
 }
@@ -655,10 +609,10 @@ function serverCallback (message, ...args) {
     case 'reset':
       if (serverDEBUG) console.log('[server.js] - USB Reset triggered via BLE')
       io.emit('key', '[server.js] - Reset triggered via BLE')
-      if (daumRUN) daumUSB.restart()
+      if (daumRUN) daum_usb.restart()
       if (kettlerRUN) {
-        kettlerUSB.restart()
-		    bikeState.restart()
+        kettler_usb.restart()
+		    kettlerBIKE.restart()
       }
       success = true
       break
@@ -668,8 +622,8 @@ function serverCallback (message, ...args) {
       io.emit('key', '[server.js] - Bike under control via BLE')
       io.emit('control', 'BIKE CONTROLLED')
       if (kettlerRUN) {
-        oled.setStatus(1)
-        bikeState.setControl()
+        kettlerOLED.setStatus(1)
+        kettlerBIKE.setControl()
       }
       if (servoRUN) controlled = true
       success = true
@@ -679,9 +633,9 @@ function serverCallback (message, ...args) {
       if (serverDEBUG) console.log('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
         watt = args[0]
-        if (daumRUN) daumUSB.setPower(watt)
-        if (kettlerRUN) bikeState.setTargetPower(watt);
-        if (servoRUN) if (!settingservo || !measuring) brforce=myServo.setWatt(watt);
+        if (daumRUN) daum_usb.setPower(watt)
+        if (kettlerRUN) kettlerBIKE.setTargetPower(watt);
+        if (servoRUN) if (!settingservo || !measuring) brforce=servo_gpio.setWatt(watt);
         if (serverDEBUG) console.log('[server.js] - Bike in ERG Mode - set Power to: ', watt)
         io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)
         io.emit('control', 'ERG MODE')
@@ -700,7 +654,7 @@ function serverCallback (message, ...args) {
       global.globalgrade_ble = grade
       global.globalcrr_ble = crr
       global.globalcw_ble = cw
-      if (kettlerRUN) bikeState.setExternalCondition(windspeed, grade, crr, cw);
+      if (kettlerRUN) kettlerBIKE.setExternalCondition(windspeed, grade, crr, cw);
       io.emit('raw', '[server.js] - Bike SIM Mode - [wind]: ' + windspeed + ' [grade]: ' + grade + ' [crr]: ' + crr + ' [cw]: ' + cw)
       io.emit('windspeed', windspeed)
       io.emit('grade', grade)
@@ -729,7 +683,7 @@ function serverCallback (message, ...args) {
       }
       // Daum
       if (simulatorRUN) {
-        daumSIM.physics(  global.globalwindspeed_ble, 
+        daum_sim.physics(  global.globalwindspeed_ble, 
                           global.globalgrade_ble, 
                           global.globalcrr_ble, 
                           global.globalcw_ble, 
@@ -738,7 +692,7 @@ function serverCallback (message, ...args) {
                           global.globalgear_daum
                         )
         var power = Number(global.globalsimpower_daum).toFixed(0)
-        // daumUSB.setPower(power) // if this is used here, then some random power is transmitted to zwift, e.g.: 111 watts / 20sec
+        // daum_usb.setPower(power) // if this is used here, then some random power is transmitted to zwift, e.g.: 111 watts / 20sec
         io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + power)
         io.emit('simpower', power)
         io.emit('control', 'SIM MODE')

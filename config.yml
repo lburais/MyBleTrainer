@@ -19,11 +19,11 @@ globals:
 equipments:
     daumUSB: false
     kettlerUSB: false
-    Servo: false
+    servoGPIO: false
     Simulator: false
-    ANT: false
-    BLE: false
-    tacxUSB: false
+    trainerANT: false
+    trainerBLE: false
+    tacxUSB: true
 
 daumUSB:
     debug: true 

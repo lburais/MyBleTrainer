@@ -7,7 +7,7 @@ const EventEmitter = require('events');
 const config = require('config-yml');
 var wheel = config.globals.wheel;
 
-class MyAntTrainer extends EventEmitter {
+class trainerANT extends EventEmitter {
   constructor (){
       super();
     let self = this;
@@ -127,4 +127,4 @@ class MyAntTrainer extends EventEmitter {
   }
 
 }
-module.exports = MyAntTrainer;
+module.exports = trainerANT;

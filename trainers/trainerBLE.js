@@ -13,7 +13,7 @@ const config = require('config-yml');
 var DEBUG = config.DEBUG.Trainer;
 let deviceMapping = {};
 
-class MyBleTrainer extends EventEmitter {
+class trainerBLE extends EventEmitter {
   constructor (){
       super();
     let self = this;
@@ -292,4 +292,4 @@ process.stdin.resume();//so the program will not close instantly
   }
 
 }
-module.exports = MyBleTrainer;
+module.exports = trainerBLE;

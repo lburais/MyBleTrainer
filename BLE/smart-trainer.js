@@ -6,6 +6,7 @@ const CyclingPowerService = require('./cycling-power-service');
 const FitnessMachineService = require('./fitness-machine-service');
 const DeviceInformationService = require('./device-information-service');
 const RunningSpeedCadenceService = require('./running-speed-cadence-service');
+const BatteryService = require('./battery-service');
 const config = require('config-yml');
 
 var DEBUG = config.DEBUG.Trainer;
@@ -29,6 +30,7 @@ class TrainerBLE extends EventEmitter {
     this.dis = new DeviceInformationService(options);
     this.rsc = new RunningSpeedCadenceService();
     this.csp = new CyclingPowerService();
+    this.bat = new BatteryService();
     
     let self = this;
     if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - BLE server starting`);
@@ -44,8 +46,9 @@ class TrainerBLE extends EventEmitter {
         bleno.startAdvertising(self.name, [
                 self.ftms.uuid,
                 self.dis.uuid,
-                self.csp.uuid,
-                self.rsc.uuid
+                //self.csp.uuid,
+                //self.rsc.uuid,
+                self.bat.uuid
         ])
       } else {
         if (DEBUG) console.log('Stopping...');
@@ -62,8 +65,9 @@ class TrainerBLE extends EventEmitter {
         bleno.setServices([
                 self.ftms, 
                 self.dis,
-                self.csp,
-                self.rsc
+                //self.csp,
+                //self.rsc,
+                self.bat
           ],
           (error) => {
             if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`)

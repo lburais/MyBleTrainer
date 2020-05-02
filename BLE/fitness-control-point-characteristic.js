@@ -62,7 +62,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
 
   // Follow Control Point instruction from the client
   //onWriteRequest (data, offset, withoutResponse, callback) {
-    onWriteRequest (data, offset, withoutResponse, callback) {
+  onWriteRequest (data, offset, withoutResponse, callback) {
     
     var state = data.readUInt8(0)
     console.log('[control point.js] - data ' +  data.toString('hex'))
