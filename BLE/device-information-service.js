@@ -1,5 +1,5 @@
 const bleno = require('bleno');
-const DIS = require('./dis');
+const DIS = require('./smart-trainer-device-information');
 
 const StaticReadCharacteristic = require('./static-read-characteristic');
 
