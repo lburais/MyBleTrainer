@@ -17,30 +17,101 @@ class tacxUSB extends EventEmitter {
   constructor() {
     if (DEBUG) console.log('[tacxUSB.js] constructor')
     super()
-    this.device = undefined
+    this.deviceUSB = undefined
   }
 
-  run() {
-    var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
-    if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+  open(deviceUSB) {
+		if (DEBUG) console.log('[tacxUSB.js] opening ...')
+    this.emit('connecting');
+    
+    deviceUSB.open()
+    
+    if (DEBUG) console.log('[tacxUSB.js] device: %o', deviceUSB)
+    
+    var interfaceUSB = deviceUSB.interface(0)
+
+    if (interfaceUSB) {
+      this.interfaceUSB = interfaceUSB
+      if (interfaceUSB.isKernelDriverActive())
+        interfaceUSB.detachKernelDriver();
+      interfaceUSB.claim();
+
+      var endpointsUSB = interfaceUSB.endpoints;
+      var endpointUSB
+      endpointsUSB.forEach( function( ep, index ) {
+        if (ep.direction == "in") {
+          endpointUSB = ep
+        }
+      })
+      if (endpointUSB) {
+        this.endpointUSB = endpointUSB
+
+        init_tacx()
+      
+        endpointUSB.on('data', function (data) {
+          if (DEBUG) console.log("1"+data);
+        })
+
+        endpointUSB.transferType = 2;
+        if (DEBUG) console.log("non empty port : %o", endpointUSB);
+        
+        endpointUSB.transfer(64, function(error, data) {
+            console.log(error, data); 
+        });
+        
+        if (DEBUG) console.log("after transfer");
+      } else {
+        this.close(deviceUSB)
+      }
+    } else {
+      this.close(deviceUSB)
+    }
+  }
+
+  close(deviceUSB) {
+    if (DEBUG) console.log('[tacxUSB.js] closing ...');
+    this.emit('disconnecting');
+  
+    if (deviceUSB) deviceUSB.close()
+    this.deviceUSB = undefined
+    this.endpointUSB = undefined
+    this.interfaceUSB = undefined 
+  }
+
+	run() {
+    var deviceUSB = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
+    if (deviceUSB.deviceDescriptor.idVendor == tacxUSB_vid && deviceUSB.deviceDescriptor.idProduct == tacxUSB_pid) {
       if (DEBUG) console.log('[tacxUSB.js] - found Tacx T1932')
-      this.device = device
+      this.deviceUSB = deviceUSB
+      this.open(deviceUSB)
     }    
 
-    usb.on('attach', function(device){
-      if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+    usb.on('attach', function(deviceUSB){
+      if (deviceUSB.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
         if (DEBUG) console.log('[tacxUSB.js] - attaching Tacx T1932')
-        this.device = device
+        this.deviceUSB = deviceUSB
+        this.open(deviceUSB)
       }    
     })
 
-    usb.on('detach', function(device){
-      if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+    usb.on('detach', function(deviceUSB){
+      if (deviceUSB.deviceDescriptor.idVendor == tacxUSB_vid && deviceUSB.deviceDescriptor.idProduct == tacxUSB_pid) {
         if (DEBUG) console.log('[tacxUSB.js] - detaching Tacx T1932')
-        this.device = undefined
+        this.deviceUSB = deviceUSB
+        this.close(deviceUSB)
       }    
     })
   }
+
+  // let's initialize com with the bike
+
+	init_tacx() {
+		//if (this.msg.length == 0)
+			return;
+		//var m = this.msg.shift();
+		//this.directWrite(m);
+		//setTimeout(() => this.init(), 150);
+	};
 
 }
 
