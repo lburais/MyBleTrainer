@@ -26,8 +26,6 @@ class BatteryLevelCharacteristic extends Bleno.Characteristic {
   onReadRequest (offset, Callback) {
     if (DEBUG) console.log('[battery-level-characteristic.js] - read')
     this._Callback = Callback;
-    //value = '100'
-    //return this.RESULT_SUCCESS;
     var data = new Buffer.from([100])
     this._Callback(this.RESULT_SUCCESS, data)    
   }

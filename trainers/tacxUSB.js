@@ -1,13 +1,52 @@
 var EventEmitter = require('events').EventEmitter
 var com = require('serialport')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
-var DEBUG = config.DEBUG.USB // turn this on for debug information in console
+var usb = require('usb')
+var usbDetect = require('usb-detection');
+
+
+var DEBUG = config.tacxUSB.debug
+var tacxUSB_vid = config.tacxUSB.vendorid 
+var tacxUSB_pid = config.tacxUSB.productid 
 
 // /////////////////////////////////////////////////////////////////////////
 // instantiation
 // /////////////////////////////////////////////////////////////////////////
 
-function tacxUSB () {
+class tacxUSB extends EventEmitter {
+  constructor() {
+    if (DEBUG) console.log('[tacxUSB.js] constructor')
+    super()
+    this.device = undefined
+  }
+
+  run() {
+    var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
+    if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+      if (DEBUG) console.log('[tacxUSB.js] - found Tacx T1932')
+      this.device = device
+    }    
+
+    usb.on('attach', function(device){
+      if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+        if (DEBUG) console.log('[tacxUSB.js] - attaching Tacx T1932')
+        this.device = device
+      }    
+    })
+
+    usb.on('detach', function(device){
+      if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+        if (DEBUG) console.log('[tacxUSB.js] - detaching Tacx T1932')
+        this.device = undefined
+      }    
+    })
+  }
+
+}
+
+// /////////////////////////////////////////////////////////////////////////
+	
+function tacxUSBold () {
   var self = this
   self.port = null
   self.pending = [] // buffer for pushing pending commands to the port
@@ -17,13 +56,55 @@ function tacxUSB () {
   self.emitter = new EventEmitter()
 
   // //////////////////////////////////////////////////////////////////////////
-  // push data in queue befor flushNext is writing it to port
+  // open port as specified by daum
+  // /////////////////////////////////////////////////////////////////////////
+  this.open = function () {
+    //com.list(function (err, ports) {
+    com.list().then(ports => {
+      //if (err) {
+      //  self.emitter.emit('error', '[tacxUSB.js] - open: ' + err)
+      //  throw err
+      //}
+      ports.forEach(function (p) {
+        if (p.vendorId && p.productId) { // ??? don't know if this is the ID of ergobike, or the serial adapter, this has to be configured for every bike, so I might skip it
+          if (DEBUG) console.log('[tacxUSB.js] - open:' + p.vendorId + '  ' + p.productId) // RS232 converter Ids
+          if (DEBUG) console.log('[tacxUSB.js] - open - Ergobike found on port ' + p.comName)
+          self.emitter.emit('key', '[tacxUSB.js] - Ergobike found on port ' + p.comName)
+          var port = new com.SerialPort(p.comName, {
+            baudrate: config.port.baudrate,
+            dataBits: config.port.dataBits,
+            parity: config.port.parity,
+            stopBits: config.port.stopBits,
+            flowControl: config.port.flowControl,
+            parser: com.parsers.byteLength(config.port.parserLength) // custom parser set to byte length that is more than the actual response message of ergobike, but no other way possible right know
+          }, false) // thats why the index loops in 'readAndDispatch' are used to get the prefix of each command
+          port.open(function () {
+            self.port = port
+            port.on('data', self.readAndDispatch)
+            self.writer = setInterval(self.flushNext, config.intervals.flushNext) // this is writing the data to the port; i've put here the timeout of DAUM interface spec; 50ms
+            if (gotAdressSuccess === false) { // check, otherwise after a restart via webserver, this will run again
+              if (DEBUG) console.log('[tacxUSB.js] - looking for cockpit adress')
+              self.emitter.emit('key', '[tacxUSB.js] - looking for cockpit adress')
+              self.readeradress = setInterval(self.getAdress, config.intervals.getAdress) // continiously get adress from ergobike, the interval is canceled if gotAdressSuccess is true
+            }
+            if (DEBUG) console.log('[tacxUSB.js] - runData')
+            self.emitter.emit('key', '[tacxUSB.js] - runData')
+            self.reader = setInterval(self.runData, config.intervals.runData) // continiously get 'run_Data' from ergobike; 500ms means, every 1000ms a buffer
+          })
+        }
+      })
+    })
+    return self.emitter
+  }
+  
+  // //////////////////////////////////////////////////////////////////////////
+  // push data in queue before flushNext is writing it to port
   // //////////////////////////////////////////////////////////////////////////
   this.write = function (string) {
     self.pending.push(string)
     if (DEBUG) console.log('[tacxUSB.js] - this.write - [OUT]: ', string)
   }
-  
+
   // //////////////////////////////////////////////////////////////////////////
   // send (flush) pending messages to port (sequencial)
   // //////////////////////////////////////////////////////////////////////////
@@ -148,47 +229,7 @@ function tacxUSB () {
     self.emitter.emit('error', '[tacxUSB.js] - unknownHandler: ' + numbers)
   }
 
-  // //////////////////////////////////////////////////////////////////////////
-  // open port as specified by daum
-  // /////////////////////////////////////////////////////////////////////////
-  this.open = function () {
-    //com.list(function (err, ports) {
-    com.list().then(ports => {
-      //if (err) {
-      //  self.emitter.emit('error', '[tacxUSB.js] - open: ' + err)
-      //  throw err
-      //}
-      ports.forEach(function (p) {
-        if (p.vendorId && p.productId) { // ??? don't know if this is the ID of ergobike, or the serial adapter, this has to be configured for every bike, so I might skip it
-          if (DEBUG) console.log('[tacxUSB.js] - open:' + p.vendorId + '  ' + p.productId) // RS232 converter Ids
-          if (DEBUG) console.log('[tacxUSB.js] - open - Ergobike found on port ' + p.comName)
-          self.emitter.emit('key', '[tacxUSB.js] - Ergobike found on port ' + p.comName)
-          var port = new com.SerialPort(p.comName, {
-            baudrate: config.port.baudrate,
-            dataBits: config.port.dataBits,
-            parity: config.port.parity,
-            stopBits: config.port.stopBits,
-            flowControl: config.port.flowControl,
-            parser: com.parsers.byteLength(config.port.parserLength) // custom parser set to byte length that is more than the actual response message of ergobike, but no other way possible right know
-          }, false) // thats why the index loops in 'readAndDispatch' are used to get the prefix of each command
-          port.open(function () {
-            self.port = port
-            port.on('data', self.readAndDispatch)
-            self.writer = setInterval(self.flushNext, config.intervals.flushNext) // this is writing the data to the port; i've put here the timeout of DAUM interface spec; 50ms
-            if (gotAdressSuccess === false) { // check, otherwise after a restart via webserver, this will run again
-              if (DEBUG) console.log('[tacxUSB.js] - looking for cockpit adress')
-              self.emitter.emit('key', '[tacxUSB.js] - looking for cockpit adress')
-              self.readeradress = setInterval(self.getAdress, config.intervals.getAdress) // continiously get adress from ergobike, the interval is canceled if gotAdressSuccess is true
-            }
-            if (DEBUG) console.log('[tacxUSB.js] - runData')
-            self.emitter.emit('key', '[tacxUSB.js] - runData')
-            self.reader = setInterval(self.runData, config.intervals.runData) // continiously get 'run_Data' from ergobike; 500ms means, every 1000ms a buffer
-          })
-        }
-      })
-    })
-    return self.emitter
-  }
+  
 
   // //////////////////////////////////////////////////////////////////////////
   // restart port

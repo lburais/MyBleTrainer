@@ -163,17 +163,17 @@ class TrainerBLE extends EventEmitter {
 
   notifyFTMS (event) {
     this.ftms.notify(event)
-    this.csp.notify(event)
-    this.rsc.notify(event)
-  };
+    //this.csp.notify(event)
+    //this.rsc.notify(event)
+  }
 
   notifyCSP (event) {    
-    this.csp.notify(event)
-  };
+    //this.csp.notify(event)
+  }
 
-  notifyRunningSpeedCadence (event) {    
-    this.rsc.notify(event)
-  };
-};
+  notifyRSC (event) {    
+    //this.rsc.notify(event)
+  }
+}
 
 module.exports = TrainerBLE

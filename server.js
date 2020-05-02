@@ -122,9 +122,7 @@ if (daumRUN){
 
 if (tacxRUN) {
   var tacxUSB = require('./trainers/tacxUSB')
-  
   var tacx_usb = new tacxUSB()
-  var tacx_obs = tacx_usb.open()
 }
 
 // /////////////////////////////////////////////////////////////////////////
@@ -404,7 +402,7 @@ if (bleRUN) {
     if ('hr' in data) io.emit('hr', data.hr)
 
     smart_trainer.notifyFTMS(data)
-    smart_trainer.notifyCSP(data)
+    //smart_trainer.notifyCSP(data)
   })
 }
 
@@ -440,7 +438,7 @@ if (antRUN) {
     
     if (!measuring) {
       smart_trainer.notifyFTMS(data)
-      smart_trainer.notifyCSP(data)
+      //smart_trainer.notifyCSP(data)
     } 
     else {
       measuring = smart_trainer.measure(data)
@@ -487,7 +485,7 @@ if (kettlerRUN) {
 
     // send to BLE adapter
     smart_trainer.notifyFTMS(data);
-    smart_trainer.notifyCSP(data);
+    //smart_trainer.notifyCSP(data);
   })
 
   kettler_usb.open()
@@ -522,7 +520,7 @@ if (daumRUN) {
     if ('gear' in data) io.emit('gear', data.gear)
     if ('program' in data) io.emit('program', data.program)
     smart_trainer.notifyFTMS(data)
-    smart_trainer.notifyCSP(data)
+    //smart_trainer.notifyCSP(data)
   })
 }
 
@@ -531,32 +529,7 @@ if (daumRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (tacxRUN) {
-  tacx_obs.on('error', string => {
-    if (serverDEBUG) console.log('[server.js] - error: ' + string)
-    io.emit('error', '[server.js] - ' + string)
-  })
-
-  tacx_obs.on('key', string => {
-    if (serverDEBUG) console.log('[server.js] - key: ' + string)
-    io.emit('key', '[server.js] - ' + string)
-  })
-
-  tacx_obs.on('raw', string => {
-    if (serverDEBUG) console.log('[server.js] - raw: ', string)
-    io.emit('raw', string.toString('hex'))
-    io.emit('version', version) // emit version number to webserver
-  })
-
-  tacx_obs.on('data', data => { // get runData from daum_usb
-    if (serverDEBUG) console.log('[server.js] - data:' + JSON.stringify(data))
-    if ('speed' in data) io.emit('speed', data.speed)
-    if ('power' in data) io.emit('power', data.power)
-    if ('rpm' in data) io.emit('rpm', data.rpm)
-    if ('gear' in data) io.emit('gear', data.gear)
-    if ('program' in data) io.emit('program', data.program)
-    smart_trainer.notifyFTMS(data)
-    smart_trainer.notifyCSP(data)
-  })
+  tacx_usb.run()
 }
 
 // /////////////////////////////////////////////////////////////////////////

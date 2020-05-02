@@ -25,6 +25,11 @@ equipments:
     trainerBLE: false
     tacxUSB: true
 
+tacxUSB:
+    debug: true
+    vendorid: 0x3561
+    productid: 0x1932
+
 daumUSB:
     debug: true 
     speed_daum: 0
