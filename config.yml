@@ -29,6 +29,10 @@ tacxUSB:
     debug: true
     vendorid: 0x3561
     productid: 0x1932
+    datalog: true
+    simulation: false
+    datafile: ""
+    period: 500
 
 daumUSB:
     debug: true 

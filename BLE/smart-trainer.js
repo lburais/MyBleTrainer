@@ -1,4 +1,4 @@
-//process.env.BLENO_HCI_DEVICE_ID="1"; //need internal BLE >4.0
+process.env.BLENO_HCI_DEVICE_ID="0"; //need internal BLE >4.0
 //process.env.BLENO_ADVERTISING_INTERVAL=200
 const bleno = require('bleno');
 const EventEmitter = require('events');
@@ -33,11 +33,11 @@ class TrainerBLE extends EventEmitter {
     this.bat = new BatteryService();
     
     let self = this;
-    if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - BLE server starting`);
+    if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - BLE server starting`);
     self.emit('key', this.name + ' - BLE server starting');
 
     bleno.on('stateChange', (state) => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - new state: ${state}`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - new state: ${state}`);
       self.emit('key', this.name + ' - new state: ' + state);
 
       self.emit('stateChange', state);
@@ -57,7 +57,7 @@ class TrainerBLE extends EventEmitter {
     })
 
     bleno.on('advertisingStart', (error) => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - advertisingStart: ${(error ? 'error ' + error : 'success')}`)
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - advertisingStart: ${(error ? 'error ' + error : 'success')}`)
       self.emit('advertisingStart', error);
       self.emit('error', error)
 
@@ -70,43 +70,43 @@ class TrainerBLE extends EventEmitter {
                 self.bat
           ],
           (error) => {
-            if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`)
+            if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`)
           }
         )
       }
     })
 
     bleno.on('advertisingStartError', () => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - advertisingStartError - advertising stopped`);
       self.emit('advertisingStartError');
-      self.emit('error', `[trainerBLE.js] - ${this.name} - advertisingStartError - advertising stopped`);
+      self.emit('error', `[smart-trainer.js] - ${this.name} - advertisingStartError - advertising stopped`);
     });
 
     bleno.on('advertisingStop', error => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
       self.emit('advertisingStop');
-      self.emit('error', `[trainerBLE.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
+      self.emit('error', `[smart-trainer.js] - ${this.name} - advertisingStop: ${(error ? 'error ' + error : 'success')}`);
     });
 
     bleno.on('servicesSet', error => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - servicesSet: ${(error) ? 'error ' + error : 'success'}`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - servicesSet: ${(error) ? 'error ' + error : 'success'}`);
     });
 
     bleno.on('accept', (clientAddress) => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - accept - Client: ${clientAddress}`);
       self.emit('accept', clientAddress);
-      self.emit('key', `[trainerBLE.js] - ${this.name} - accept - Client: ${clientAddress}`);
+      self.emit('key', `[smart-trainer.js] - ${this.name} - accept - Client: ${clientAddress}`);
       bleno.updateRssi();
     });
 
     bleno.on('rssiUpdate', (rssi) => {
-      if (DEBUG) console.log(`[trainerBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
-      self.emit('key', `[trainerBLE.js] - ${this.name} - rssiUpdate: ${rssi}`);
+      if (DEBUG) console.log(`[smart-trainer.js] - ${this.name} - rssiUpdate: ${rssi}`);
+      self.emit('key', `[smart-trainer.js] - ${this.name} - rssiUpdate: ${rssi}`);
     });
     
     bleno.on('disconnect', (clientAddress) => {
       self.emit('disconnect', clientAddress);
-      self.emit('key', `[trainerBLE.js] - ${this.name} - disconnect - Client: ${clientAddress}`); 
+      self.emit('key', `[smart-trainer.js] - ${this.name} - disconnect - Client: ${clientAddress}`); 
     });
     
     // /////////////////////////////////////////////////////////////////////////

@@ -42,7 +42,6 @@
     "serialport": "^8.0.7",
     "socket.io": "^2.3.0",
     "usb": "^1.6.3",
-    "usb-detection": "^4.9.0",
     "utf-8-validate": "^5.0.2"
   }
 }

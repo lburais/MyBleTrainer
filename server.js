@@ -563,7 +563,7 @@ function smart_trainer_init () {
     if (kettlerRUN) kettlerOLED.displayBLE('Connected');
     io.emit('accept', '[server.js] - ' + string)
   })
-    
+
   smart_trainer.on('accept', string => {
   	if (kettlerRUN) kettlerOLED.displayBLE('Started');
     io.emit('accept', '[server.js] - ' + string)
