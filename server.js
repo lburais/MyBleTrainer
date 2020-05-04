@@ -529,7 +529,35 @@ if (daumRUN) {
 // /////////////////////////////////////////////////////////////////////////
 
 if (tacxRUN) {
-  tacx_usb.run()
+  tacx_obs = tacx_usb.run()
+
+  tacx_obs.on('error', string => {
+    if (serverDEBUG) console.log('[server.js] - error: ' + string)
+    io.emit('error', '[server.js] - ' + string)
+  })
+
+  tacx_obs.on('key', string => {
+    if (serverDEBUG) console.log('[server.js] - key: ' + string)
+    io.emit('key', '[server.js] - ' + string)
+  })
+
+  tacx_obs.on('raw', string => {
+    if (serverDEBUG) console.log('[server.js] - raw: ', string)
+    io.emit('raw', string)
+    //io.emit('raw', string.toString('hex'))
+    io.emit('version', version) // emit version number to webserver
+  })
+
+  tacx_obs.on('data', data => { // get runData from daum_usb
+    if (serverDEBUG) console.log('[server.js] - data:' + JSON.stringify(data))
+    if ('speed' in data) io.emit('speed', data.speed)
+    if ('power' in data) io.emit('power', data.power)
+    if ('rpm' in data) io.emit('rpm', data.rpm)
+    if ('gear' in data) io.emit('gear', data.gear)
+    if ('program' in data) io.emit('program', data.program)
+    smart_trainer.notifyFTMS(data)
+    //smart_trainer.notifyCSP(data)
+  })
 }
 
 // /////////////////////////////////////////////////////////////////////////
