@@ -308,6 +308,14 @@ function tacxUSB() {
   }
 
   // /////////////////////////////////////////////////////////////////////////
+  // datalog
+  // /////////////////////////////////////////////////////////////////////////
+
+  this.datalog = function(data) {
+    self.datalogger.write( data + "\n\r")
+  }
+
+  // /////////////////////////////////////////////////////////////////////////
   // calculate_power
   // /////////////////////////////////////////////////////////////////////////
 
@@ -320,11 +328,36 @@ function tacxUSB() {
   }
 
   // /////////////////////////////////////////////////////////////////////////
-  // datalog
+  // estimate_power
   // /////////////////////////////////////////////////////////////////////////
 
-  this.datalog = function(data) {
-    self.datalogger.write( data + "\n\r")
+  this.estimate_power = function (windspeed, grade, crr, cw, speed) {
+
+        // h and area are already included in the cw value sent from ZWIFT or FULLGAZ
+        var mRider = config.physics.mass_rider                                      // mass in kg of the rider
+        var mBike = config.physics.mass_rider                                       // mass in kg of the bike
+        var mass = mBike + mRider                                                   // mass in kg of the bike + rider
+        var h = 1.92                                                                // height in m of rider
+        var area = 0.0276 * Math.pow(h, 0.725) * Math.pow(mRider, 0.425) + 0.1647;  //  cross sectional area of the rider, bike and wheels
+
+        if (grade > config.physics.max_grade) grade = config.physics.max_grade       // set to maximum gradient; means, no changes in resistance if gradient is greater than maximum
+              
+        var speedms = global.speed * 0.2778 // speed in m/s
+        if (speedms > config.physics.max_speedms) speedms = 0
+
+        //  Constants
+        var g = 9.8067 // acceleration in m/s^2 due to gravity
+        var p = 1.225  // air density in kg/m^3 at 15°C at sea level
+        var e = 0.97   // drive chain efficiency
+        // var vw = Math.abs(v + w); // have to do this to avoid NaN in Math.pow()
+
+        // Cycling Wattage Calculator - https://www.omnicalculator.com/sports/cycling-wattage
+        var forceofgravity = g * Math.sin(Math.atan(grade / 100)) * mass        
+        var forcerollingresistance = g * Math.cos(Math.atan(grade / 100)) * mass * crr
+        var forceaerodynamic = 0.5 * cw * p * Math.pow(speedms + windspeed, 2)
+        var simpower = (forceofgravity + forcerollingresistance + forceaerodynamic) * speedms / e
+
+        return simpower
   }
 
   // /////////////////////////////////////////////////////////////////////////
