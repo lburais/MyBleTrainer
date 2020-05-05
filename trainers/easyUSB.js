@@ -1,8 +1,15 @@
+// ========================================================================
+// easyUSB.js
+//
+// node-usb wrapper 
+//
+// ========================================================================
+
 var EventEmitter = require('events').EventEmitter;
 var usb = require('usb');
 const config = require('config-yml')
 
-var DEBUG = config.DEBUG.USB
+var DEBUG = config.globals.debugUSB
 
 /**
   # easyusb

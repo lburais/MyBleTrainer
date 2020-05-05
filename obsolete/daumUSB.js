@@ -1,11 +1,13 @@
 var EventEmitter = require('events').EventEmitter
 var com = require('serialport')
 var DaumSIM = require('./daumSIM')
-const config = require('config-yml') // Use config for yaml config files in Node.js projects
-var DEBUG = config.DEBUG.daumUSB // turn this on for debug information in console
+const config = require('config-yml') 
+var DEBUG = config.daumUSB.debug || config.globals.debugUSB
+
 // /////////////////////////////////////////////////////////////////////////
 // instantiation
 // /////////////////////////////////////////////////////////////////////////
+
 var daumSIM = new DaumSIM()
 
 function daumUSB () {

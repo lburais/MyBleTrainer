@@ -1,6 +1,9 @@
 var Bleno = require('bleno');
-var debugRSC = require('debug')('rsc');
 var Flags = require('./flags');
+const config = require('config-yml') // Use config for yaml config files in Node.js projects
+
+var DEBUG = config.globals.debugBLE;
+
 
 // Spec
 //https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.cycling_power_measurement.xml
@@ -35,13 +38,13 @@ class RSCMeasurementCharacteristic extends  Bleno.Characteristic {
   }
 
   onSubscribe(maxValueSize, updateValueCallback) {
-    debugRSC('[RSCMeasurementCharacteristic] client subscribed to PM');
+    DEBUG('[RSCMeasurementCharacteristic] client subscribed to PM');
     this._updateValueCallback = updateValueCallback;
     return this.RESULT_SUCCESS;
   };
 
   onUnsubscribe() {
-    debugRSC('[RSCMeasurementCharacteristic] client unsubscribed from PM');
+    DEBUG('[RSCMeasurementCharacteristic] client unsubscribed from PM');
     this._updateValueCallback = null;
     return this.RESULT_UNLIKELY_ERROR;
   };
@@ -62,11 +65,11 @@ class RSCMeasurementCharacteristic extends  Bleno.Characteristic {
     // Unit is in m/s with a resolution of 1/256 s
     // We assume the units have already been converted
     // from MPH or KMH to mps
-    debugRSC("Running Speed: " + event.speed);
+    DEBUG("Running Speed: " + event.speed);
     buffer.writeUInt16LE(Math.floor(event.speed * 256), offset);
     offset += 2;
     
-    debugRSC("Running Cadence: " + event.cadence);
+    DEBUG("Running Cadence: " + event.cadence);
     buffer.writeUInt8(Math.floor(event.cadence), offset);
     offset += 1;
 

@@ -88,9 +88,12 @@
         // https://stackoverflow.com/questions/5539139/change-get-check-state-of-checkbox
         addAlert_key(data);
       });
+
       ///////////////////////////////////////////////////////////////////////////
-      // ergometer values
+      // Values
       ///////////////////////////////////////////////////////////////////////////
+      socket.on('level', function (data) {
+      });
       socket.on('speed', function (data) {
         $('#speed').html(data);
         $('#speed_bar').css("width", data * 1.4+ "%");
@@ -142,43 +145,26 @@
       });
       socket.on('grade', function (data) {
         $('#grade').text(data);
+      });      
+      socket.on('measured', function () {
+        document.getElementById("measuring_start").value = "Start";
+        document.getElementById("measuring_start").disabled = false;
       });
-      socket.on('gear', function (data) {
-        $('#gear').text("Gear: " + data);
-      });
-      socket.on('program', function (data) {
-        $('#program').text("Program: " + data);
-      });
-        socket.on('measured', function () {
-            document.getElementById("measuring_start").value = "Start";
-            document.getElementById("measuring_start").disabled = false;
-        });
       socket.on('preset_servo', function (data) {
-                 addAlert_key(data[0] + ' ' + data[1]);
+          addAlert_key(data[0] + ' ' + data[1]);
         document.getElementById("range_servo_min").value = data[0];
         document.getElementById("range_servo_max").value = data[1];
-        document.getElementById("range_gear").min = data[0];
-        document.getElementById("range_gear").max = data[1];
-        document.getElementById("range_gear").value = data[2];
-        document.getElementById("gear_val").innerHTML = data[2];
-
+        document.getElementById("range_level").min = data[0];
+        document.getElementById("range_level").max = data[1];
+        document.getElementById("range_level").value = data[2];
+        document.getElementById("level_val").innerHTML = data[2];
       });
-     // socket.on('control', function (data) {
-     //   $('#control').text(data);
-     //   if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
-     //     $('#switch').bootstrapToggle('disable')
-     //     $('#mode').bootstrapToggle('disable')
-     //   }
-     //   if (data === 'disconnected') {
-     //     $('#switch').bootstrapToggle('enable')
-     //     $('#mode').bootstrapToggle('enable') 
-      //  }
-      //});
       socket.on('version', function (data) {
         $('#version').text(data);
       });
+
       ///////////////////////////////////////////////////////////////////////////
-      // Functions and interaction
+      // Menu
       ///////////////////////////////////////////////////////////////////////////
       $(function () {
         var socket = io();
@@ -190,34 +176,6 @@
           socket.emit('reco', 'reco');
           return false;
         });
-        $('#servosetting').change(function(){
-          if( $(this).is(':checked') ) {
-            document.getElementById("range_servo").style.visibility="visible";
-            socket.emit('servosetting', 'on');
-          } else {
-            document.getElementById("range_servo").style.visibility="collapse";
-            socket.emit('servosetting', 'off');
-          }
-          return false;
-        });
-        $('#measuringtoggle').change(function(){
-          if( $(this).is(':checked') ) {
-            document.getElementById("measuring").style.visibility="visible";
-            socket.emit('measuring', 'on');
-          } else {
-            document.getElementById("measuring").style.visibility="collapse";
-            socket.emit('measuring', 'off');
-          }
-          return false;
-        });
-        $('#measuring_start').click(function(){
-            document.getElementById("measuring_start").value = "wait";
-            document.getElementById("measuring_start").disabled = true;
-            socket.emit('measuring_start', 'measuring_start');
-            return false;
-        });
-        
-        
         $('#stop').click(function(){
           socket.emit('stop', 'stop');
           return false;
@@ -226,29 +184,24 @@
           socket.emit('start', 'start');
           return false;
         });
-        $('a.dropdown-item.gear').click(function() {
-          var id = $(this).attr('id');
-          var idd = id.replace('gear_', '');
-          socket.emit('setGear', idd);
-          return false;
-        });
       });
-      // Slider Functions
-        
 
-        function showVal(newVal,caller){
-            if (caller === 'change_min' || caller === 'change_max') {
-                var new_servo_val=[newVal,caller]
-                socket.emit('new_servo_val', new_servo_val);
-            }
-            document.getElementById("servo_val").innerHTML = newVal;
+      ///////////////////////////////////////////////////////////////////////////
+      // Slider
+      ///////////////////////////////////////////////////////////////////////////
+
+      function showVal(newVal,caller){
+        if (caller === 'change_min' || caller === 'change_max') {
+          var new_servo_val=[newVal,caller]
+          socket.emit('new_servo_val', new_servo_val);
         }
-        function gearVal(newVal){
-                var new_gear_val=[newVal]
-                socket.emit('new_gear_val', new_gear_val);
-            document.getElementById("gear_val").innerHTML = newVal;
-        } 
-
+        document.getElementById("servo_val").innerHTML = newVal;
+      }
+      function levelVal(newVal){
+        var new_level_val=[newVal]
+        socket.emit('new_level_val', new_level_val);
+        document.getElementById("level_val").innerHTML = newVal;
+      } 
 
     </script>
   </head>
@@ -264,19 +217,6 @@
           </button>
           <div class="collapse navbar-collapse" id="navbarNavDropdown">
             <ul class="navbar-nav">
-              <li class="nav-item dropdown active">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  set Gear
-                </a>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuGear">
-                  <a class="dropdown-item gear" id="gear_01" href="#">01</a>
-                  <a class="dropdown-item gear" id="gear_03" href="#">03</a>
-                  <a class="dropdown-item gear" id="gear_05" href="#">05</a>
-                  <a class="dropdown-item gear" id="gear_07" href="#">07</a>
-                  <a class="dropdown-item gear" id="gear_09" href="#">09</a>
-                  <a class="dropdown-item gear" id="gear_11" href="#">11</a>
-                </div>
-              </li>
               <li class="nav-item active">
                 <a class="nav-link" href="#" id="restart"><strong>RESTART</strong></a>
               </li>
@@ -292,82 +232,14 @@
         <div class="row">
           <div class="col-md-4">
             <div class="card text-center"> 
-                <div class="card-header">
-                    <input type="checkbox" id="servosetting" unchecked data-toggle="toggle" data-on="Servosetting On" data-off="Servosetting Off" data-onstyle="primary" data-offstyle="secondary">
-                    <input type="checkbox" id="measuringtoggle" unchecked data-toggle="toggle" data-on="Measuring On" data-off="Measuring Off" data-onstyle="primary" data-offstyle="secondary">
-            <table style="width:100%">
-                <tbody  id="range_servo" style="visibility: collapse;">
-                    <tr>
-                        <td width="15%">
-                            <h5 class="title">nearest: </h5>
-                        </td>
-                    <td>
-                        <div class="slidecontainer">
-                            <input type="range" min="900" max="2100" value="900" class="slider" id="range_servo_min" style="width: 100%; " oninput="showVal(this.value, 'input_min')" onchange="showVal(this.value,'change_min')">
-                        </div>
-                    </td>
-                    </tr>
-                    <tr>
-                        <td width="15%">
-                            <h5 class="title">widest: </h5>
-                        </td>
-                    <td>
-                        <div class="slidecontainer">
-                            <input type="range" min="900" max="2100" value="900" class="slider" id="range_servo_max" style="width: 100%; " oninput="showVal(this.value, 'input_max')" onchange="showVal(this.value,'change_max')">
-                        </div>
-                    </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <h5 class="title">Value: </h5>
-                        </td>
-                        <td>
-                            <h5 class="title" id="servo_val"> </h5>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <table style="width:100%">
-                <tbody  id="measuring" style="visibility: collapse;">
-                    <tr>
-                        <td width = "65%">
-                            <h5 class="title">1. Select Gear to set up.</h5>
-                        </td>    
-                        <td rowspan="5">
-                             <input type="button" id="measuring_start" value="Start" onclick="msg()"> 
-                        </td> 
-                    </tr>
-                    <tr>
-                        <td>
-                            <h5 class="title">2. Start pedaling</h5>
-                        </td>    
-                    </tr>
-                    <tr>
-                        <td>
-                            <h5 class="title">3. Stop pedaling</h5>
-                        </td>    
-                    </tr>
-                    <tr>
-                        <td>
-                            <h5 class="title">4. Hit Start button.</h5>
-                        </td>    
-                    </tr>
-                    <tr>
-                        <td>
-                            <h5 class="title">5. Wail until wheel stops. -> Repeat with different gear.</h5>
-                        </td>    
-                    </tr>
-                </tbody>
-            </table>
-                    
-                    
-                    </div>
-
+              <div class="card-header">
+                <h1 class="title">Peripherals</h1>
+              </div>
               <div class="card-body">
 
-                <h5 class="title">GearSlider</h5>
+                <h5 class="title">Resistance Level</h5>
                 <div class="slidecontainer">
-                    <input type="range" min="900" max="2100" value="900" class="slider" id="range_gear" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                    <input type="range" min="0" max="13" value="0" class="slider" id="range_level" style="width: 100%; " oninput="levelVal(this.value, 'input_max')" onchange="levelVal(this.value,'change_max')">
                 </div>
                 <table>
                     <tbody>
@@ -376,19 +248,17 @@
                                 <h5 class="title">Value: </h5>
                             </td>
                             <td>
-                                <h5 class="title" id="gear_val"> </h5>
+                                <h5 class="title" id="level_val"> </h5>
                             </td>
                         </tr>
                     </tbody>
                 </table>
+
                 <h5 class="title">Power</h5>
                 <!-- <p class="power" id="power">0</p> -->
                 <div class="progress">
                   <div id="power_bar" class="progress-bar bg-success" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="1500"></div>
                 </div>
-                
-                
-                
 
                 <h5 class="title">RPM</h5>
                 <!-- <p class="rpm" id="rpm">0</p> -->
@@ -399,7 +269,7 @@
                 <h5 class="title">Speed</h5>
                 <!-- <p class="speed" id="speed">0</p> -->
                 <div class="progress">
-                  <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                  <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 <h5 class="title">Heart-Rate</h5>
                 <!-- <p class="hr" id="hr">0</p> -->
@@ -407,15 +277,15 @@
                   <div id="hr_bar" class="progress-bar orange" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
                 </div>
               </div>
-              <div class="card-footer text-muted">
-                <h1><span id="program" class="badge badge-primary">Program: -</span>
-                <span id="gear" class="badge badge-secondary">Gear: -</span></h1>
-              </div>
             </div>
           </div>
+
           <div class="col-md-4">
             <div class="card text-center">
-              <div class="card-body">
+              <div class="card-header text-muted">
+                <h1 class="title">Application</h1>
+              </div>
+               <div class="card-body">
                 <ul class="list-group">
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     <h5 class="title">Power calculation [W]</h5>
@@ -447,24 +317,25 @@
               </div>
             </div>
           </div>
-          <div class="col-md-4">
-            <div class="card card-block d-flex text-center" style="height: 100%">
-              <div class="card-header">
+
+          <div class="col-md-4"  style="width: 50%">
+             <div class="card-header text-muted">
+                <h1 class="title">Traces</h1>
+           </div>
+              <div class="card-body scroll d-flex">
                 <input type="checkbox" id="messages_key" checked data-toggle="toggle" data-on="Key On" data-off="Key Off" data-onstyle="primary" data-offstyle="secondary">
                 <input type="checkbox" id="messages_raw" unchecked data-toggle="toggle" data-on="Raw On" data-off="Raw Off" data-onstyle="primary" data-offstyle="secondary">
                 <input type="checkbox" id="messages_error" checked data-toggle="toggle" data-on="Err On" data-off="Err Off" data-onstyle="primary" data-offstyle="secondary">
-              </div>
-              <div class="card-body scroll d-flex">
-                  <div class="alert" id="alerts"></div>
+                <div class="alert" id="alerts"></div>
               </div>
               <div class="card-footer text-muted">
-                DATA<span id="receiveDataRaw" class="badge badge-secondary"></span>
+                DATA <span id="receiveDataRaw" class="badge badge-secondary"></span>
               </div>
             </div>
           </div>
         </div>
         <footer class="page-footer font-small primary">
-          <div class="footer-copyright text-center py-3">ergoFACE version:
+          <div class="footer-copyright text-center py-3">version:
             <span id="version" class="badge badge-secondary">-</span>
           </div>
         </footer>

@@ -9,7 +9,7 @@ const RunningSpeedCadenceService = require('./running-speed-cadence-service');
 const BatteryService = require('./battery-service');
 const config = require('config-yml');
 
-var DEBUG = config.DEBUG.Trainer;
+var DEBUG = config.globals.debugBLE || config.trainerBLE.debug;
 
 var rim = config.globals.rim;
 var wheel_weight = config.globals.wheel_weight;

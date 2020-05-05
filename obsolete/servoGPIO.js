@@ -3,12 +3,12 @@ pigpio.configureSocketPort(8889);
 var Gpio = pigpio.Gpio;
 const motor = new Gpio(17, {mode: Gpio.OUTPUT});
 const config = require('config-yml');
-var nearest = config.Servo.nearest;
-var widest = config.Servo.widest;
+var nearest = config.servoGPIO.nearest;
+var widest = config.servoGPIO.widest;
 var range = widest - nearest;
 var servo_set = 155;
-var m_Rider = config.globals.m_Rider;
-var m_Bike = config.globals.m_Bike;
+var m_Rider = config.servoGPIO.m_Rider;
+var m_Bike = config.servoGPIO.m_Bike;
 const fs = require('fs');
 var config_file = "./config.yml";
 var s_bool = false;
@@ -21,8 +21,8 @@ const echo = new Gpio(22, {mode: Gpio.INPUT, alert: true});
 
 var ma = [];
 
-var wheel = config.globals.wheel;
-var spokes = config.globals.spokes
+var wheel = config.servoGPIO.wheel;
+var spokes = config.servoGPIO.spokes
 //var timediff_1, timediff_2 = 0;
 var spoke_speed_1, spoke_speed_2 = 0;
 var ma_average_old;
