@@ -1,14 +1,18 @@
-/* Running Speed and Cadence Service
- * Assigned Number: 0x1814
- * 
- * Supported Characteristics:
- *  0x2A53 - RSC Measurement
- *  0x2A54 - RSC Feature
- *  0x2A5D - Sensor Location
- *  0x2A55 - SC Control Point
- * 
- * Spec: https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.running_speed_and_cadence.xml
- */ 
+// ========================================================================
+// running-speed-cadence-service.js
+//
+// BLE Running Speed and Cadence Service 0x1814
+//
+// The Running Speed and Cadence (RSC) Service exposes speed, cadence and 
+// other data related to fitness applications such as the stride length and 
+// the total distance the user has traveled while using the 
+// Speed and Cadence Sensor (Server).
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/services/
+// https://www.bluetooth.org/docman/handlers/downloaddoc.ashx?doc_id=435661
+//
+// ========================================================================
+
 const Bleno = require('bleno');
 
 const RSCMeasurementCharacteristic = require('./running-speed-cadence-measurement-characteristic');

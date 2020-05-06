@@ -1,8 +1,21 @@
+// ========================================================================
+// cycling-power-service.js
+//
+// BLE Cycling Power Service 0x1818
+//
+// The Cycling Power (CP) Service exposes power- and force-related data 
+// and optionally speed- and cadence-related data from a Cycling Power 
+// sensor (Server) intended for sports and fitness applications.
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/services/
+// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=412770
+//
+// ========================================================================
+
 const Bleno = require('bleno');
 const CyclingPowerMeasurementCharacteristic = require('./cycling-power-measurement-characteristic');
 const StaticReadCharacteristic = require('./static-read-characteristic');
 
-// https://developer.bluetooth.org/gatt/services/Pages/ServiceViewer.aspx?u=org.bluetooth.service.cycling_power.xml
 class CyclingPowerService extends Bleno.PrimaryService {
   constructor () {
     let powerMeasurement = new CyclingPowerMeasurementCharacteristic();

@@ -11,8 +11,15 @@ var app = require('express')()
 var server = require('http').createServer(app) // for getting IP dynamicaly in index.ejs
 var io = require('socket.io')(server) // for getting IP dynamicaly in index.ejs
 var path = require('path')
-const { version } = require('./package.json') // get version number from package.json
-const config = require('config-yml') // Use config for yaml config files in Node.js projects
+const { version } = require('./package.json') 
+const config = require('config-yml') 
+var logger = require('./lib/logger')
+var physics = require('./lib/physics')
+
+//physics.setPowerTable(windspeed = 0, crr = 1, cw = 1)
+physics.setPowerTable(0,1,1)
+console.log('table : ' + JSON.stringify(physics.power_for_speed_and_grade))
+process.exit(1)
 
 // ////////////////////////////////////////////////////////////////////////
 // Configuration
@@ -139,23 +146,23 @@ if (tacxRUN) {
   tacx_obs = tacx_usb.run()
 
   tacx_obs.on('error', string => {
-    if (webDEBUG) console.log('[server.js] - error: ' + string)
+    if (webDEBUG) logger.info('[server.js] - error: ' + string)
     io.emit('error', '[server.js] - ' + string)
   })
 
   tacx_obs.on('key', string => {
-    if (webDEBUG) console.log('[server.js] - key: ' + string)
+    if (webDEBUG) logger.info('[server.js] - key: ' + string)
     io.emit('key', '[server.js] - ' + string)
   })
 
   tacx_obs.on('raw', string => {
-    if (webDEBUG) console.log('[server.js] - raw: ', string)
+    if (webDEBUG) logger.info('[server.js] - raw: ', string)
     io.emit('raw', string)
     io.emit('version', version) // emit version number to webserver
   })
 
   tacx_obs.on('data', data => { 
-    if (webDEBUG) console.log('[server.js] - data: ' + JSON.stringify(data))
+    if (webDEBUG) logger.info('[server.js] - data: ' + JSON.stringify(data))
     if ('speed' in data) io.emit('speed', data.speed)
     if ('speed' in data) global.speed = data.speed
     if ('power' in data) io.emit('power', data.power)
@@ -186,7 +193,7 @@ app.get('/', function (req, res) {
 
 server.listen(process.env.PORT || config.globals.server, function () { 
   // for getting IP dynamicaly in index.ejs and not to enter it manually
-  if (webDEBUG) console.log('[server.js] - listening on port 3000!')
+  if (webDEBUG) logger.info('[server.js] - listening on port 3000!')
 })
  
 // /////////////////////////////////////////////////////////////////////////
@@ -196,26 +203,26 @@ server.listen(process.env.PORT || config.globals.server, function () {
 
 io.on('connection', socket => {
 
-  if (webDEBUG) console.log('[server.js] - connected to socketio')
+  if (webDEBUG) logger.info('[server.js] - connected to socketio')
 
   socket.on('reset', function (data) {
     io.emit('key', '[server.js] - VirtualTrainer Server started')
   })
 
   socket.on('restart', function (data) {
-    if (webDEBUG) console.log('[server.js] - restart')
+    if (webDEBUG) logger.info('[server.js] - restart')
     io.emit('key', '[server.js] - restart')
   })
 
   socket.on('reco', function (data) {
-    if (webDEBUG) console.log('[server.js] - reconnect')
+    if (webDEBUG) logger.info('[server.js] - reconnect')
     if (bleRUN) trainer_ble.recon()
     smart_trainer_init ()
     io.emit('key', '[server.js] - reconnect')
   })
 
   socket.on('stop', function (data) {
-    if (webDEBUG) console.log('[server.js] - stop')
+    if (webDEBUG) logger.info('[server.js] - stop')
     io.emit('key', '[server.js] - stop')
   })
 
@@ -243,7 +250,7 @@ function smart_trainer_init () {
   })
 
   smart_trainer.on('error', string => {
-    if (webDEBUG) console.error('[server.js] - error: ' + string)
+    if (webDEBUG) logger.error('[server.js] - error: ' + string)
     io.emit('error', '[server.js] - ' + string)
   })
 
@@ -261,19 +268,19 @@ function smart_trainer_init () {
 // /////////////////////////////////////////////////////////////////////////
 
 function serverCallback (message, ...args) {
-  console.log('[server.js] - ftms server callback', message)
+  logger.info('[server.js] - ftms server callback', message)
   var success = false
 
   switch (message) {
     case 'reset':
-      if (webDEBUG) console.log('[server.js] - USB Reset triggered via BLE')
+      if (webDEBUG) logger.info('[server.js] - USB Reset triggered via BLE')
       io.emit('key', '[server.js] - Reset triggered via BLE')
       if (tacxRUN) tacx_usb.restart()
       success = true
       break
 
     case 'control': // do nothing special
-      if (webDEBUG) console.log('[server.js] - Bike under control via BLE')
+      if (webDEBUG) logger.info('[server.js] - Bike under control via BLE')
       io.emit('key', '[server.js] - Bike under control via BLE')
       io.emit('control', 'BIKE CONTROLLED')
       //globals.controlled = true
@@ -281,11 +288,11 @@ function serverCallback (message, ...args) {
       break
 
     case 'power': // ERG Mode - receive control point value via BLE from zwift or other app
-      if (webDEBUG) console.log('[server.js] - Bike ERG Mode')
+      if (webDEBUG) logger.info('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
         watt = args[0]
         if (tacxRUN) tacx_usb.setPower(watt, global.speed)
-        if (webDEBUG) console.log('[server.js] - Bike in ERG Mode - set Power to: ', watt)
+        if (webDEBUG) logger.info('[server.js] - Bike in ERG Mode - set Power to: ', watt)
         io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)
         io.emit('control', 'ERG MODE')
         success = true
@@ -293,7 +300,7 @@ function serverCallback (message, ...args) {
       break
 
     case 'simulation': // SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
-      if (webDEBUG) console.log('[server.js] - Bike in SIM Mode')
+      if (webDEBUG) logger.info('[server.js] - Bike in SIM Mode')
       if (args.length > 3) {
 
         // crr and windspeed values sent from ZWIFT / FULLGAZ are crazy, specially FULLGAZ, when starting to decent, this drives up the wattage to above 600W
@@ -308,33 +315,11 @@ function serverCallback (message, ...args) {
         io.emit('crr', crr)
         io.emit('cw', cw)
 
-        // h and area are already included in the cw value sent from ZWIFT or FULLGAZ
-        var mRider = config.physics.mass_rider                                      // mass in kg of the rider
-        var mBike = config.physics.mass_rider                                       // mass in kg of the bike
-        var mass = mBike + mRider                                                   // mass in kg of the bike + rider
-        var h = 1.92                                                                // height in m of rider
-        var area = 0.0276 * Math.pow(h, 0.725) * Math.pow(mRider, 0.425) + 0.1647;  //  cross sectional area of the rider, bike and wheels
-
-        if (grade > config.physics.max_grade) grade = config.physics.max_grade       // set to maximum gradient; means, no changes in resistance if gradient is greater than maximum
-              
-        var speedms = global.speed * 0.2778 // speed in m/s
-        if (speedms > config.physics.max_speedms) speedms = 0
-
-        //  Constants
-        var g = 9.8067 // acceleration in m/s^2 due to gravity
-        var p = 1.225  // air density in kg/m^3 at 15°C at sea level
-        var e = 0.97   // drive chain efficiency
-        // var vw = Math.abs(v + w); // have to do this to avoid NaN in Math.pow()
-
-        // Cycling Wattage Calculator - https://www.omnicalculator.com/sports/cycling-wattage
-        var forceofgravity = g * Math.sin(Math.atan(grade / 100)) * mass        
-        var forcerollingresistance = g * Math.cos(Math.atan(grade / 100)) * mass * crr
-        var forceaerodynamic = 0.5 * cw * p * Math.pow(speedms + windspeed, 2)
-        var simpower = (forceofgravity + forcerollingresistance + forceaerodynamic) * speedms / e
+        var simpower = physics.estimatePower(windspeed, grade, crr, cw, global.speed)
         
         if (tacxRUN) tacx_usb.setPower(simpower, global.speed)
 
-        if (webDEBUG) console.log(`[trainerSIM.js] - SIM calculated power:  ${simpower}W`)
+        if (webDEBUG) logger.info(`[trainerSIM.js] - SIM calculated power:  ${simpower}W`)
         io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + power)
         io.emit('simpower', power)
         io.emit('control', 'SIM MODE')

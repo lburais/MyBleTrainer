@@ -1,3 +1,13 @@
+// ========================================================================
+// cycling-power-measurement-characteristic.js
+//
+// BLE Cycling Power Measurement Characteristics 0x2A63
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/characteristics/
+//
+// ========================================================================
+
+var logger = require('../lib/logger')
 var Bleno = require('bleno');
 const config = require('config-yml'); // Use config for yaml config files in Node.js projects
 var DEBUG = config.globals.debugBLE;
@@ -13,17 +23,15 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
       value: null,
       properties: ['notify'],
       descriptors: [
-        new Bleno.Descriptor({
-                    uuid: '2901',
-                    value: 'Cycling Power Measurement'
-                }),
-        new Bleno.Descriptor({
-          // Client Characteristic Configuration
-            uuid: '2902',
-            value: Buffer.alloc(2)
+        new Bleno.Descriptor({ // Characteristic User Description
+          uuid: '2901',
+          value: 'Cycling Power Measurement'
         }),
-        new Bleno.Descriptor({
-          // Server Characteristic Configuration
+        new Bleno.Descriptor({ // Client Characteristic Configuration
+          uuid: '2902',
+          value: Buffer.alloc(2)
+        }),
+        new Bleno.Descriptor({ // Server Characteristic Configuration
           uuid: '2903',
           value: Buffer.alloc(2)
         })
@@ -33,13 +41,13 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-    if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - client subscribed to PM');
+    if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - client subscribed to PM');
     this._updateValueCallback = updateValueCallback;
     return this.RESULT_SUCCESS;
   };
 
   onUnsubscribe () {
-    if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - client unsubscribed from PM');
+    if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - client unsubscribed from PM');
     this._updateValueCallback = null;
     return this.RESULT_UNLIKELY_ERROR;
   };
@@ -66,31 +74,31 @@ class CyclingPowerMeasurementCharacteristic extends Bleno.Characteristic {
 
     if ('power' in event) {
       var power = event.power;
-      if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - power: ' + power);
+      if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - power: ' + power);
       buffer.writeInt16LE(power, 2);
     }
 /*
     if ('raw' in event) {
       
     //  if (DEBUG) 
-        if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - raw: ' + event.raw.toString('hex'));
-        if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - w: ' + event.raw.readUInt32LE(1));
-        if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - wt: ' + event.raw.readUInt16LE(5));
-        if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - c: ' + event.raw.readUInt16LE(7));
-        if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - ct: ' + event.raw.readUInt16LE(9));
+        if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - raw: ' + event.raw.toString('hex'));
+        if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - w: ' + event.raw.readUInt32LE(1));
+        if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - wt: ' + event.raw.readUInt16LE(5));
+        if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - c: ' + event.raw.readUInt16LE(7));
+        if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - ct: ' + event.raw.readUInt16LE(9));
 
           
         buffer.writeUInt32LE(event.raw.readUInt32LE(1), 4)
         buffer.writeUInt16LE(event.raw.readUInt16LE(5), 8)
         buffer.writeUInt16LE(event.raw.readUInt16LE(7), 10)
         buffer.writeUInt16LE(event.raw.readUInt16LE(9), 12)
-         if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - buffer: ' + buffer.toString('hex'));
+         if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - buffer: ' + buffer.toString('hex'));
     }
 */
 
     if ('rpm' in event) {
       var rpm = event.rpm
-      if (DEBUG) console.log('[cycling-power-measurement-characteristic.js] - rpm: ' + event.rpm)
+      if (DEBUG) logger.info('[cycling-power-measurement-characteristic.js] - rpm: ' + event.rpm)
       buffer.writeUInt16LE(rpm, 4)
     }
     

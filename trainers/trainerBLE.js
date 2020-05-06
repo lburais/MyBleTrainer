@@ -1,3 +1,10 @@
+// ========================================================================
+// trainerBLE.js
+//
+// Manage BLE sensors (heart rate 180d and Running Speed Cadence 1816)
+//
+// ========================================================================
+
 /*jslint node: true */
 //"use strict";
 process.env.NOBLE_HCI_DEVICE_ID="0"
@@ -11,6 +18,8 @@ let peripherals = [];
 const EventEmitter = require('events');
 const config = require('config-yml');
 var DEBUG = config.DEBUG.Trainer;
+var logger = require('../lib/logger')
+
 let deviceMapping = {};
 
 class trainerBLE extends EventEmitter {
@@ -30,12 +39,12 @@ class trainerBLE extends EventEmitter {
     
     var connect = function(err) {
         if (err) throw err;
-        if (DEBUG) console.log("Connection to " + this.peripheral.uuid);
+        if (DEBUG) logger.info("Connection to " + this.peripheral.uuid);
         peripherals[peripherals.length] = this.peripheral;
 
 
         if (peripherals.length >= maxPeripherals) {
-            console.log("Stopping BLE scan. Reached " + maxPeripherals + " peripherals");
+            logger.info("Stopping BLE scan. Reached " + maxPeripherals + " peripherals");
             noble.stopScanning();
         };
 
@@ -55,19 +64,19 @@ class trainerBLE extends EventEmitter {
 
         
         services.forEach(function(service) { 
-                    if (DEBUG) console.log("service " + service.uuid);
+                    if (DEBUG) logger.info("service " + service.uuid);
 
             if(service.uuid == '1816') {
-                if (DEBUG) console.log("found CSCService UUID");
+                if (DEBUG) logger.info("found CSCService UUID");
                 var characteristicUUIDs = ['2a5b'];
                 service.discoverCharacteristics(characteristicUUIDs, function(error, characteristics) {
-               // console.log("got characteristics");
+               // logger.info("got characteristics");
 
                     requestNotify(characteristics[0]); //this is the first scratch characteristic.
                 });
             }; 
             if (service.uuid == '180d') {
-                if (DEBUG) console.log("found HRMService UUID");
+                if (DEBUG) logger.info("found HRMService UUID");
                 var characteristicUUIDs = ['2a37'];
                 service.discoverCharacteristics(characteristicUUIDs, function(error, characteristics) {
  
@@ -97,7 +106,7 @@ class trainerBLE extends EventEmitter {
 
         });
         characteristic.notify(true, function(error) {
-            if (DEBUG) console.log('turned on notifications ' + (error ? ' with error' : 'without error'));
+            if (DEBUG) logger.info('turned on notifications ' + (error ? ' with error' : 'without error'));
                         self.emit('notifications_true');
 
         });
@@ -211,7 +220,7 @@ class trainerBLE extends EventEmitter {
     }
 
     var discover = function(peripheral) {
-            console.log("(scan)found:" + peripheral.advertisement.localName + " - UUID: " + peripheral.uuid);
+            logger.info("(scan)found:" + peripheral.advertisement.localName + " - UUID: " + peripheral.uuid);
             deviceMapping[peripheral.uuid] = peripheral.advertisement.localName;
               setTimeout(function(){
                     peripheral.connect(connect.bind({peripheral:peripheral}));  
@@ -221,7 +230,7 @@ class trainerBLE extends EventEmitter {
 //false = do not allow multiple - devices differentiated by peripheral UUID
 //limit to devices having the service UUID below - which all Beans have
 var rescan = function () {
-                  console.log('rescan');
+                  logger.info('rescan');
 
     noble.startScanning(serviceUuids, false);
 
@@ -241,14 +250,14 @@ noble.on('discover', discover);
 
 
 this.recon = function () {
-            if (DEBUG) console.log('reconnect');
+            if (DEBUG) logger.info('reconnect');
 
         noble.stopScanning();
         
           peripherals.forEach(function(peripheral) {
-            if (DEBUG) console.log('Disconnecting from ' + peripheral.uuid + '...');
+            if (DEBUG) logger.info('Disconnecting from ' + peripheral.uuid + '...');
             peripheral.disconnect( function(){
-                if (DEBUG) console.log('disconnected');
+                if (DEBUG) logger.info('disconnected');
             });
           });
         peripherals = [];
@@ -259,14 +268,14 @@ this.recon = function () {
     }
 
 this.discon = function () {
-            if (DEBUG) console.log('reconnect');
+            if (DEBUG) logger.info('reconnect');
 
         noble.stopScanning();
         
           peripherals.forEach(function(peripheral) {
-            if (DEBUG) console.log('Disconnecting from ' + peripheral.uuid + '...');
+            if (DEBUG) logger.info('Disconnecting from ' + peripheral.uuid + '...');
             peripheral.disconnect( function(){
-                if (DEBUG) console.log('disconnected');
+                if (DEBUG) logger.info('disconnected');
             });
           });
         peripherals = [];
@@ -275,9 +284,9 @@ this.discon = function () {
 
 var exitHandler = function exitHandler() {
   peripherals.forEach(function(peripheral) {
-    console.log('Disconnecting from ' + peripheral.uuid + '...');
+    logger.info('Disconnecting from ' + peripheral.uuid + '...');
     peripheral.disconnect( function(){
-          console.log('disconnected');
+          logger.info('disconnected');
     });
   });
 

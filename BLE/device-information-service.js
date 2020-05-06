@@ -1,3 +1,16 @@
+// ========================================================================
+// device-information-service.js
+//
+// BLE Device Information Service 0x180A
+//
+// This service exposes manufacturer information about a device. 
+// The Device Information Service is instantiated as a Primary Service. 
+// Only one instance of the Device Information Service is exposed on a device.
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/services/
+//
+// ========================================================================
+
 const bleno = require('bleno');
 const DIS = require('./smart-trainer-device-information');
 

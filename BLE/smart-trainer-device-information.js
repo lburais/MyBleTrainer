@@ -1,3 +1,10 @@
+// ========================================================================
+// smart-trainer-device-inforamtion.js
+//
+// Description for the BLE peripheral (server)
+//
+// ========================================================================
+
 class DIS {
     constructor(options) {
         options = options || { };

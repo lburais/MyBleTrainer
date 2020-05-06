@@ -1,3 +1,10 @@
+// ========================================================================
+// static-read-characteristic.js
+//
+// wrapper for BLE read characteristic
+//
+// ========================================================================
+
 const Bleno = require('bleno')
 
 class StaticReadCharacteristic extends Bleno.Characteristic {

@@ -1,5 +1,15 @@
+// ========================================================================
+// running-speed-cadence-measurement-characteristic.js
+//
+// BLE Running Speed Cadence Measurement Characteristics 0x2A53
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/characteristics/
+//
+// ========================================================================
+
+var logger = require('../lib/logger')
 var Bleno = require('bleno');
-var Flags = require('./flags');
+var Flags = require('../lib/flags');
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
 
 var DEBUG = config.globals.debugBLE;
@@ -16,12 +26,11 @@ class RSCMeasurementCharacteristic extends  Bleno.Characteristic {
       value: null,
       properties: ['notify'],
       descriptors: [
-        new Bleno.Descriptor({
+        new Bleno.Descriptor({ // Characteristic User Description
 					uuid: '2901',
 					value: 'Running Speed And Cadence'
 				}),
-        new Bleno.Descriptor({
-          // Client Characteristic Configuration
+        new Bleno.Descriptor({ // Client Characteristic Configuration
           uuid: '2902',
           value: Buffer.alloc(2)
         })

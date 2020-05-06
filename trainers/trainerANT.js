@@ -1,4 +1,12 @@
 
+// ========================================================================
+// trainerANT.js
+//
+// Manage USB ANT sensors (heart rate and speed cadence) 
+//
+// ========================================================================
+
+var logger = require('../lib/logger')
 const Ant = require('ant-plus');
 const stick = new Ant.GarminStick2();
 var exitHandlerBound = false;
@@ -24,8 +32,7 @@ class trainerANT extends EventEmitter {
         
     const hrScanner = new Ant.HeartRateScanner(stick);
         hrScanner.on('hbData', data => {
-            //console.log(`id: ${data.DeviceID}`);
-            //console.dir(data);
+            //logger.info(`id: ${data.DeviceID}`);
             ant_data.hr = data.ComputedHeartRate;
             self.emit('notified', ant_data);
 
@@ -52,10 +59,8 @@ class trainerANT extends EventEmitter {
         ant_data.wheel_time = data.SpeedEventTime;
         ant_data.wheel_count = data.CumulativeSpeedRevolutionCount;
         self.emit('notified', ant_data);
-       // console.log(`id: ${data.DeviceID}`);
-        //console.log(ant_data.speed);
-
-       // console.dir(data);
+       // logger.info(`id: ${data.DeviceID}`);
+        //logger.info(ant_data.speed);
     });
     speedCadenceScanner.on('cadenceData', data => {
         let rpm = data.CalculatedCadence;  
@@ -64,8 +69,7 @@ class trainerANT extends EventEmitter {
         ant_data.crank_time = data.CadenceEventTime;
         ant_data.crank_count = data.CumulativeCadenceRevolutionCount;
         self.emit('notified', ant_data);
-        //console.log(`id: ${data.DeviceID}`);
-        //console.dir(data);
+        //logger.info(`id: ${data.DeviceID}`);
     });
 
     const speedScanner = new Ant.SpeedScanner(stick);
@@ -77,10 +81,8 @@ class trainerANT extends EventEmitter {
         to_watt(data.CalculatedSpeed);
         ant_data.speed = speed*3.6;
         self.emit('notified', ant_data);
-       // console.log(`id: ${data.DeviceID}`);
-        //console.log(ant_data.speed);
-
-       // console.dir(data);
+       // logger.info(`id: ${data.DeviceID}`);
+        //logger.info(ant_data.speed);
     });
     
     function to_watt (data) {
@@ -105,18 +107,17 @@ class trainerANT extends EventEmitter {
         ant_data.crank_time = data.CadenceEventTime;
         ant_data.crank_count = data.CumulativeCadenceRevolutionCount;       
         self.emit('notified', ant_data);
-        //console.log(`id: ${data.DeviceID}`);
-        //console.dir(data);
+        //logger.info(`id: ${data.DeviceID}`);
     });
 
 
     stick.on('startup', function() {
-        console.log('startup');
+        logger.info('startup');
         hrScanner.scan();
     });
 
     if (!stick.open()) {
-        console.log('Stick not found!');
+        logger.info('Stick not found!');
     }
 
     process.on('SIGINT', () => {

@@ -42,6 +42,7 @@
     "serialport": "^8.0.7",
     "socket.io": "^2.3.0",
     "usb": "^1.6.3",
-    "utf-8-validate": "^5.0.2"
+    "utf-8-validate": "^5.0.2",
+    "winston": "^3.2.1"
   }
 }

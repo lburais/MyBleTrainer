@@ -15,8 +15,10 @@ physics:
     debug: true
     max_grade: 11
     max_speedms: 55
+    height_rider: 1.8
     mass_rider: 89
     mass_bike: 11
+    avg_power: 200
 
 tacxUSB:
     debug: true
@@ -27,8 +29,8 @@ tacxUSB:
     datafile: ""
     period: 500
     powercurve: "trainers/power_calc_factors_imagic.txt"
-    min_power: 5
-    max_power: 800
+    power_step: 5
+    power_max: 800
 
 trainerANT:
     debug: true

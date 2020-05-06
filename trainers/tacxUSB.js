@@ -1,16 +1,17 @@
 // ========================================================================
 // tacxUSB.js
 //
-// Manage US interface with Tacx T1932 
+// Manage USB interface with Tacx T1932 
 //
 // ========================================================================
 
+var logger = require('../lib/logger')
 var EventEmitter = require('events').EventEmitter
 const config = require('config-yml')
 const fs = require('fs')
 var usb = require('usb')
-var easyusb = require('./easyUSB')
-const EndOfLine = require('os').EOL
+var easyusb = require('../lib/easyUSB')
+var physics = require('../lib/physics')
 
 function tacxUSB() {
 
@@ -39,12 +40,12 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.run = function() {
-    if (tacxUSB_debug) console.log('[tacxUSB.js] - run')
+    if (tacxUSB_debug) logger.info('[tacxUSB.js] - run')
     self.emitter.emit('key', '[tacxUSB.js] - run')
 
     var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
     if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-      if (tacxUSB_debug) console.log('[tacxUSB.js] - found Tacx T1932')
+      if (tacxUSB_debug) logger.info('[tacxUSB.js] - found Tacx T1932')
         self.emitter.emit('key', '[tacxUSB.js] - attaching Tacx T1932')
       self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
       this.init()
@@ -56,7 +57,7 @@ function tacxUSB() {
 
     usb.on('attach', function(device){
       if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-        console.warn('[tacxUSB.js] - attaching Tacx T1932')
+        logger.warn('[tacxUSB.js] - attaching Tacx T1932')
         self.emitter.emit('key', '[tacxUSB.js] - attaching Tacx T1932')
         self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
         this.init()
@@ -69,7 +70,7 @@ function tacxUSB() {
 
     usb.on('detach', function(device) {
       if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-        console.warn('[tacxUSB.js] - detaching Tacx T1932')
+        logger.warn('[tacxUSB.js] - detaching Tacx T1932')
         self.emitter.emit('key', '[tacxUSB.js] - detaching Tacx T1932')
         if (self.deviceUSB) self.deviceUSB.close( function() {self.deviceUSB = undefined})
         if (self.intervalUSB) clearInterval(self.intervalUSB)
@@ -85,7 +86,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.init = function() {
-    if (tacxUSB_debug) console.log('[tacxUSB.js] - init')
+    if (tacxUSB_debug) logger.info('[tacxUSB.js] - init')
     self.emitter.emit('key', '[tacxUSB.js] - init')
     
     if (self.deviceUSB) {
@@ -111,7 +112,7 @@ function tacxUSB() {
           }
         })
       } catch (err) {
-        console.error('[tacxUSB.js] - error: ', err)
+        logger.error('[tacxUSB.js] - error: ', err)
         for( let i=0; i < possfov.length; i++){
           self.powercurve.push( { possfov: 0, reslist: 0, grade: 0, multiplier: 0, additional: 0} )
         }
@@ -122,7 +123,7 @@ function tacxUSB() {
         pc.reslist = reslist[self.powercurve.indexOf(pc)]
       })
   
-      if (tacxUSB_debug) console.log('self.powercurve: %o', self.powercurve)
+      if (tacxUSB_debug) logger.info('self.powercurve: %o', self.powercurve)
 
       // open datalogger
       if (tacxUSB_datalog) {
@@ -138,7 +139,7 @@ function tacxUSB() {
       this.write(Buffer.from([0x02, 0x00, 0x00, 0x00]))
 
       // start read timer
-      if (tacxUSB_debug) console.log('[tacxUSB.js] - starting timer')
+      if (tacxUSB_debug) logger.info('[tacxUSB.js] - starting timer')
       self.emitter.emit('key', '[tacxUSB.js] - starting timer')
       var interval = setInterval( this.read, tacxUSB_interval )
       self.intervalUSB = interval
@@ -158,7 +159,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.write = function(data) {
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - write data: ${data}`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - write data: ${data}`)
     if (tacxUSB_datalog && self.datalogger) self.datalog( 'TX ' + data.toString('hex') )
     if (self.deviceUSB) self.deviceUSB.write(data, self.write_error_callback)
   }
@@ -168,7 +169,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.write_callback = function(error) {
-    if (error) console.error(`[tacxUSB.js] - write error callback : ${error}`)
+    if (error) logger.error(`[tacxUSB.js] - write error callback : ${error}`)
   }
 
   // /////////////////////////////////////////////////////////////////////////
@@ -178,7 +179,7 @@ function tacxUSB() {
   this.read = function() {
     var millis = Date.now() - self.timeUSB
     self.timeUSB = Date.now()
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - read time: ${millis}ms`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - read time: ${millis}ms`)
     self.deviceUSB.read(64, self.read_callback)
   }
 
@@ -188,11 +189,11 @@ function tacxUSB() {
 
   this.read_callback = function(error, data) {
     if (error) {
-      console.error(`[tacxUSB.js] - read error: ${error}`)
+      logger.error(`[tacxUSB.js] - read error: ${error}`)
       return
     }
 
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - read data [${data.length}]: ${data.toString('hex')}`);
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - read data [${data.length}]: ${data.toString('hex')}`);
 
     if (tacxUSB_datalog && self.datalogger) self.datalog( 'RX '+data.toString('hex') )
 
@@ -204,7 +205,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.setPower = function (power, speed) { 
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - set power ${power}W at speed ${speed}km/h`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - set power ${power}W at speed ${speed}km/h`)
     
     // power validation is done here to dont loose quality in other functions
     if (power < config.tacxUSB.min_power) power = config.tacxUSB.min_power // cut negative or too low power values from simulation
@@ -221,7 +222,7 @@ function tacxUSB() {
       } else return false
     }) // find resistance value immediately above grade set by zwift
 
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - set power with ${pc.reslist}`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - set power with ${pc.reslist}`)
     self.send(pc.reslist)
   }
   
@@ -230,7 +231,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.send = function(resistance_level, pedecho = 0) {
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - send with ${resistance_level} and ${pedecho}`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - send with ${resistance_level} and ${pedecho}`)
 
     var r5=Math.round(resistance_level) & 0xff    //byte5
     var r6=Math.round(resistance_level )>>8 & 0xff //byte6
@@ -243,7 +244,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.receive = function(buffer) {
-    if (tacxUSB_debug) console.log(`[tacxUSB.js] - receive`)
+    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - receive`)
     if (buffer.length > 40) {
       var data = {}
 
@@ -275,7 +276,7 @@ function tacxUSB() {
       if (pc == undefined) {
         // not an imagic fixed value return- find closest value
         if (self.powercurve[0].possfov != 0) if (tacxUSB_debug) 
-          if (tacxUSB_debug) console.log(`[tacxUSB.js] - Found variable resistance return value from trainer`)
+          if (tacxUSB_debug) logger.info(`[tacxUSB.js] - Found variable resistance return value from trainer`)
 
         // possible resistance value to be transmitted to device
         // reslist = Buffer.from([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000])
@@ -303,7 +304,7 @@ function tacxUSB() {
 
       self.emitter.emit('data', data)
     } else {
-      if (tacxUSB_debug) console.log(`[tacxUSB.js] - not enough data received: ${buffer.length}`)
+      if (tacxUSB_debug) logger.info(`[tacxUSB.js] - not enough data received: ${buffer.length}`)
     }
   }
 
@@ -328,48 +329,36 @@ function tacxUSB() {
   }
 
   // /////////////////////////////////////////////////////////////////////////
-  // estimate_power
-  // /////////////////////////////////////////////////////////////////////////
-
-  this.estimate_power = function (windspeed, grade, crr, cw, speed) {
-
-        // h and area are already included in the cw value sent from ZWIFT or FULLGAZ
-        var mRider = config.physics.mass_rider                                      // mass in kg of the rider
-        var mBike = config.physics.mass_rider                                       // mass in kg of the bike
-        var mass = mBike + mRider                                                   // mass in kg of the bike + rider
-        var h = 1.92                                                                // height in m of rider
-        var area = 0.0276 * Math.pow(h, 0.725) * Math.pow(mRider, 0.425) + 0.1647;  //  cross sectional area of the rider, bike and wheels
-
-        if (grade > config.physics.max_grade) grade = config.physics.max_grade       // set to maximum gradient; means, no changes in resistance if gradient is greater than maximum
-              
-        var speedms = global.speed * 0.2778 // speed in m/s
-        if (speedms > config.physics.max_speedms) speedms = 0
-
-        //  Constants
-        var g = 9.8067 // acceleration in m/s^2 due to gravity
-        var p = 1.225  // air density in kg/m^3 at 15°C at sea level
-        var e = 0.97   // drive chain efficiency
-        // var vw = Math.abs(v + w); // have to do this to avoid NaN in Math.pow()
-
-        // Cycling Wattage Calculator - https://www.omnicalculator.com/sports/cycling-wattage
-        var forceofgravity = g * Math.sin(Math.atan(grade / 100)) * mass        
-        var forcerollingresistance = g * Math.cos(Math.atan(grade / 100)) * mass * crr
-        var forceaerodynamic = 0.5 * cw * p * Math.pow(speedms + windspeed, 2)
-        var simpower = (forceofgravity + forcerollingresistance + forceaerodynamic) * speedms / e
-
-        return simpower
-  }
-
-  // /////////////////////////////////////////////////////////////////////////
   // simulate
   // /////////////////////////////////////////////////////////////////////////
 
-  this.simulate = function(buffer) {
-    var internal = Buffer.from(buffer)
+  this.simulate = function(windspeed, grade, crr, cw, power) {
+    var internal = Buffer.alloc(64)
+/*
+    var power = config.physics.avg_power
+    var mass = config.physics.mass_rider + config.physics.mass_bike 
 
+    // estimate speed in m/s
+    var forceofgravity = g * Math.sin(Math.atan(grade / 100)) * mass        
+    var forcerollingresistance = g * Math.cos(Math.atan(grade / 100)) * mass * crr
+    //var forceaerodynamic = 0.5 * cw * p * Math.pow(speedms + windspeed, 2)
+    
+    var power = (forceofgravity + forcerollingresistance + forceaerodynamic) * speedms / e
+
+    var simpower = (forceofgravity + forcerollingresistance + forceaerodynamic) * speedms / e
+
+    var speedms = (power - g * mass * (Math.cos(Math.atan(grade/100)) * crr + Math.sin(Math.atan(grade/100))) / Math.pow(0.5 * CX * p,0.5) - windspeed
+
+*/
     internal.writeUInt8(60, 12)                                   // hr
+    internal.writeUInt8(0, 14)                                    // flags
+    internal.writeUInt32LE(0, 24)                                 // distance
     internal.writeUInt16LE(Math.round( 20 * 2.8054 * 100 ), 32)   // raw speed = kph * 289.75
+    internal.writeUInt32LE(0, 34)                                 // accelration
+    internal.writeUInt32LE(0, 36)                                 // average_load
     internal.writeUInt16LE(self.powercurve[2].possfov, 38)        // current_load
+    internal.writeUInt32LE(0, 40)                                 // target_load
+    internal.writeUInt8(90, 42)                                   // pedecho
     internal.writeUInt8(90, 44)                                   // rpm
 
     return internal

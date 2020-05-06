@@ -1,5 +1,15 @@
+// ========================================================================
+// fitness-machine-status-characteristic.js
+//
+// BLE Fitness Machine Status Characteristics 0x2ADA
+//
+// Spec: https://www.bluetooth.com/specifications/gatt/characteristics/
+//
+// ========================================================================
+
+var logger = require('../lib/logger')
 var Bleno = require('bleno')
-const config = require('config-yml') // Use config for yaml config files in Node.js projects
+const config = require('config-yml') 
 var DEBUG = config.globals.debugBLE;
 
 // Spec
@@ -31,8 +41,7 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
       value: null,
       properties: ['notify'],
       descriptors: [
-        new Bleno.Descriptor({
-          // Client Characteristic Configuration
+        new Bleno.Descriptor({ // Client Characteristic Configuration
           uuid: '2902',
           value: Buffer.alloc(2)
         })
@@ -42,19 +51,19 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-    if (DEBUG) console.log('[fitness-machine-status-characteristic.js] - client subscribed')
+    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - client subscribed')
     this._updateValueCallback = updateValueCallback
     return this.RESULT_SUCCESS
   }
 
   onUnsubscribe () {
-    if (DEBUG) console.log('[fitness-machine-status-characteristic.js] - client unsubscribed')
+    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - client unsubscribed')
     this._updateValueCallback = null
     return this.RESULT_UNLIKELY_ERROR
   }
 
   notify (event) {
-    if (DEBUG) console.log('[fitness-machine-status-characteristic.js] - notify')
+    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - notify')
     var buffer = new Buffer.from(2)
     // speed + power + heart rate
     buffer.writeUInt8(StatusOpCode.startedResumedUser, 0)
@@ -62,7 +71,7 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
     if (this._updateValueCallback) {
       this._updateValueCallback(buffer)
     } else {
-      if (DEBUG) console.log('[fitness-machine-status-characteristic.js] - nobody is listening')
+      if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - nobody is listening')
     }
     return this.RESULT_SUCCESS
   }
