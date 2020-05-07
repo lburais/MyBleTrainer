@@ -29,6 +29,7 @@ tacxUSB:
     datafile: ""
     period: 500
     powercurve: "trainers/power_calc_factors_imagic.txt"
+    speed_min: 10
     power_step: 5
     power_max: 800
 

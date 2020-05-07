@@ -11,16 +11,15 @@ var app = require('express')()
 var server = require('http').createServer(app) // for getting IP dynamicaly in index.ejs
 var io = require('socket.io')(server) // for getting IP dynamicaly in index.ejs
 var path = require('path')
-const { version } = require('./package.json') 
-const config = require('config-yml') 
+const { version } = require('./package.json')
+const config = require('config-yml')
 var logger = require('./lib/logger')
-var physics = require('./lib/physics')
 
 // ////////////////////////////////////////////////////////////////////////
 // Configuration
 // ////////////////////////////////////////////////////////////////////////
 
-var DEBUG = config.globals.debug 
+var DEBUG = config.globals.debug
 var webDEBUG = (config.globals.debugWWW || DEBUG)
 var usbDEBUG = (config.globals.debugUSB || DEBUG)
 var antDEBUG = (config.globals.debugANT || DEBUG)
@@ -29,14 +28,6 @@ var bleDEBUG = (config.globals.debugBLE || DEBUG)
 var antRUN = config.equipments.trainerANT
 var bleRUN = config.equipments.trainerBLE
 var tacxRUN = config.equipments.tacxUSB
-
-// ////////////////////////////////////////////////////////////////////////
-// VirtualTrainer specific
-// ////////////////////////////////////////////////////////////////////////
-
-var speed = 0.0
-var power = 0.0
-var controlled = false
 
 // /////////////////////////////////////////////////////////////////////////
 // Smart Trainer instantiation
@@ -59,7 +50,7 @@ if (bleRUN) {
 
   trainer_ble.on('notified', data => {
     // recalculate power if BLE controlled? P = F * v
-    
+
     if ('rpm' in data) io.emit('rpm', data.rpm)
     if ('speed' in data) {
       speedms = Number(data.speed/3.6).toFixed(4)
@@ -71,7 +62,7 @@ if (bleRUN) {
       var tp=brforce * data.speed/3.6
       data.power = Math.round(tp)
       io.emit('power', data.power)
-        
+
     } else {
       io.emit('power', data.power)
     }
@@ -97,7 +88,7 @@ if (antRUN) {
 
   trainer_ant.on('notified', data => {
     // recalculate power if BLE controlled? P = F * v
-    
+
     if ('rpm' in data) io.emit('rpm', data.rpm.toFixed(0))
     if ('speed' in data) {
         speedms = Number(data.speed/3.6).toFixed(4)
@@ -112,13 +103,13 @@ if (antRUN) {
     } else {
       io.emit('power', data.power)
     }
-    
+
     if ('hr' in data) io.emit('hr', data.hr)
-    
+
     if (!measuring) {
       smart_trainer.notifyFTMS(data)
       //smart_trainer.notifyCSP(data)
-    } 
+    }
     else {
       measuring = smart_trainer.measure(data)
       io.emit('key', '[server.js] - measured?')
@@ -126,7 +117,7 @@ if (antRUN) {
         io.emit('measured')
         io.emit('key', '[server.js] - yes!')
       }
-    } 
+    }
   })
 }
 
@@ -156,7 +147,7 @@ if (tacxRUN) {
     io.emit('version', version) // emit version number to webserver
   })
 
-  tacx_obs.on('data', data => { 
+  tacx_obs.on('data', data => {
     if (webDEBUG) logger.info('[server.js] - data: ' + JSON.stringify(data))
     if ('speed' in data) io.emit('speed', data.speed)
     if ('speed' in data) global.speed = data.speed
@@ -186,13 +177,13 @@ app.get('/', function (req, res) {
 // server start listening to port 3000
 // /////////////////////////////////////////////////////////////////////////
 
-server.listen(process.env.PORT || config.globals.server, function () { 
+server.listen(process.env.PORT || config.globals.server, function () {
   // for getting IP dynamicaly in index.ejs and not to enter it manually
   if (webDEBUG) logger.info('[server.js] - listening on port 3000!')
 })
- 
+
 // /////////////////////////////////////////////////////////////////////////
-// Web server callback, listen for actions taken at the server GUI, 
+// Web server callback, listen for actions taken at the server GUI,
 // not from Ant, Daum or BLE
 // /////////////////////////////////////////////////////////////////////////
 
@@ -259,7 +250,7 @@ function smart_trainer_init () {
 }
 
 // /////////////////////////////////////////////////////////////////////////
-// BLE callback section 
+// BLE callback section
 // /////////////////////////////////////////////////////////////////////////
 
 function serverCallback (message, ...args) {
@@ -278,15 +269,17 @@ function serverCallback (message, ...args) {
       if (webDEBUG) logger.info('[server.js] - Bike under control via BLE')
       io.emit('key', '[server.js] - Bike under control via BLE')
       io.emit('control', 'BIKE CONTROLLED')
-      //globals.controlled = true
       success = true
       break
 
     case 'power': // ERG Mode - receive control point value via BLE from zwift or other app
       if (webDEBUG) logger.info('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
-        watt = args[0]
-        if (tacxRUN) tacx_usb.setPower(watt, global.speed)
+
+        watt = Number(args[0]).toFixed(2)
+
+        if (tacxRUN) tacx_usb.setPower( watt)
+
         if (webDEBUG) logger.info('[server.js] - Bike in ERG Mode - set Power to: ', watt)
         io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)
         io.emit('control', 'ERG MODE')
@@ -301,24 +294,22 @@ function serverCallback (message, ...args) {
         // crr and windspeed values sent from ZWIFT / FULLGAZ are crazy, specially FULLGAZ, when starting to decent, this drives up the wattage to above 600W
         var windspeed = Number(args[0]).toFixed(1)
         var grade = Number(args[1]).toFixed(1)
-        var crr = Number(args[2]).toFixed(4)       // coefficient of rolling resistance 
+        var crr = Number(args[2]).toFixed(4)       // coefficient of rolling resistance
         var cw = Number(args[3]).toFixed(2)        // coefficient of drag
-        
+
         io.emit('raw', '[server.js] - Bike SIM Mode - [wind]: ' + windspeed + ' [grade]: ' + grade + ' [crr]: ' + crr + ' [cw]: ' + cw)
         io.emit('windspeed', windspeed)
         io.emit('grade', grade)
         io.emit('crr', crr)
         io.emit('cw', cw)
 
-        var simpower = physics.estimatePower(windspeed, grade, crr, cw, global.speed)
-        
-        if (tacxRUN) tacx_usb.setPower(simpower, global.speed)
+        var simpower = 0
+        if (tacxRUN) simpower = tacx_usb.setSimulation( windspeed, grade, crr, cw)
 
-        if (webDEBUG) logger.info(`[trainerSIM.js] - SIM calculated power:  ${simpower}W`)
-        io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + power)
-        io.emit('simpower', power)
+        if (webDEBUG) logger.info(`[server.js] - SIM calculated power:  ${simpower}W`)
+        io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
+        io.emit('simpower', simpower)
         io.emit('control', 'SIM MODE')
-        
         success = true
       }
       break

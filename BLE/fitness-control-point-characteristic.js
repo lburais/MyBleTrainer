@@ -72,7 +72,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
   // Follow Control Point instruction from the client
   //onWriteRequest (data, offset, withoutResponse, callback) {
   onWriteRequest (data, offset, withoutResponse, callback) {
-    
+
     var state = data.readUInt8(0)
     logger.info('[control point.js] - data ' +  data.toString('hex'))
     switch (state) {
@@ -138,17 +138,15 @@ class FitnessControlPoint extends Bleno.Characteristic {
         callback(this.buildResponse(state, ResultCode.success))
         break
       case ControlPointOpCode.setIndoorBikeSimulationParameters: // this is SIM MODE
-        global.globalmode = 'SIM' // this is overriding the toggles from webserver
-        global.globalswitch = 'Gear' // this is overriding the toggles from webserver
         if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.setIndoorBikeSimulationParameters')
         var windspeed = data.readInt16LE(1) * 0.001
         var grade = data.readInt16LE(3) * 0.01
         var crr = data.readUInt8(5) * 0.0001
         var cw = data.readUInt8(6) * 0.01
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - windspeed: ', windspeed)
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - grade: ', grade)
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - crr: ', crr)
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - cw: ', cw)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - windspeed: ${windspeed}`)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - grade: ${grade}`)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - crr: ${crr}`)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - cw: ${cw}`)
         if (this.serverCallback('simulation', windspeed, grade, crr, cw)) {
           callback(this.buildResponse(state, ResultCode.success))
         } else {
