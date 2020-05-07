@@ -16,11 +16,6 @@ const config = require('config-yml')
 var logger = require('./lib/logger')
 var physics = require('./lib/physics')
 
-//physics.setPowerTable(windspeed = 0, crr = 1, cw = 1)
-physics.setPowerTable(0,1,1)
-console.log('table : ' + JSON.stringify(physics.power_for_speed_and_grade))
-process.exit(1)
-
 // ////////////////////////////////////////////////////////////////////////
 // Configuration
 // ////////////////////////////////////////////////////////////////////////
