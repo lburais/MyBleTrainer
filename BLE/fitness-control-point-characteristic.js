@@ -116,7 +116,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
         if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.setTargetPower.')
         if (this.underControl) {
           var watt = data.readUInt16LE(1)
-          if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - Target Power set to: ' + watt)
+          if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - Target Power set to: ${watt}W`)
           if (this.serverCallback('power', watt)) {
             callback(this.buildResponse(state, ResultCode.success)) // ok
             // } else {
@@ -143,8 +143,8 @@ class FitnessControlPoint extends Bleno.Characteristic {
         var grade = data.readInt16LE(3) * 0.01
         var crr = data.readUInt8(5) * 0.0001
         var cw = data.readUInt8(6) * 0.01
-        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - windspeed: ${windspeed}`)
-        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - grade: ${grade}`)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - windspeed: ${windspeed}m/s`)
+        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - grade: ${grade}%`)
         if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - crr: ${crr}`)
         if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - cw: ${cw}`)
         if (this.serverCallback('simulation', windspeed, grade, crr, cw)) {

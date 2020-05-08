@@ -276,8 +276,7 @@ function serverCallback (message, ...args) {
       if (webDEBUG) logger.info('[server.js] - Bike ERG Mode')
       if (args.length > 0) {
 
-        watt = Number(args[0]).toFixed(2)
-
+        watt = Number(args[0]).toFixed(0)
         if (tacxRUN) tacx_usb.setPower( watt)
 
         if (webDEBUG) logger.info('[server.js] - Bike in ERG Mode - set Power to: ', watt)
