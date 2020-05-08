@@ -285,38 +285,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
   // send
   // /////////////////////////////////////////////////////////////////////////
-/*
-  this.send = function (power, speed) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - set power ${power}W at speed ${speed}km/h`)
 
-    // power validation is done here to dont loose quality in other functions
-    if (power < config.tacxUSB.power_step) power = config.tacxUSB.power_step // cut negative or too low power values from simulation
-    if (power > config.tacxUSB.power_max) power = config.tacxUSB.power_max // cut too high power calculations
-    if (speed < config.tacxUSB.speed_min) speed = config.tacxUSB.speed_min                                             // default to at least 10 kph
-
-    // set resistance level
-    var closest = 1000
-    var pc = self.powercurve.find( function (pc) {
-      var power_at_level = Math.round(speed * pc.multiplier + pc.additional)
-      if (( power - power_at_level )**2 < closest**2 ) {
-        closest = ((power - power_at_level)**2)**0.5
-        return true
-      } else return false
-    }) // find resistance value immediately above grade set by zwift
-
-    // build frame and send
-
-    var pedecho = 0
-
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - reslist: ${pc.reslist}, pedecho: ${pedecho}`)
-
-    var r5=Math.round(pc.reslist) & 0xff    //byte5
-    var r6=Math.round(pc.reslist )>>8 & 0xff //byte6
-    var byte_ints = Buffer.from([0x01, 0x08, 0x01, 0x00, r5, r6, pedecho, 0x00 ,0x02, 0x52, 0x10, 0x04])
-
-    self.write(byte_ints)
-  }
-*/
   this.send = function (reslist, pedecho = 0) {
     if (tacxUSB_debug) logger.info(`[tacxUSB.js] - reslist: ${reslist}, pedecho: ${pedecho}`)
 
