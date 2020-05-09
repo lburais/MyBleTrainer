@@ -1,66 +1,67 @@
 # Virtual Smart Trainer
-* forked from https://github.com/360manu/kettlerUSB2BLE
-* and https://github.com/weinzmi/ergoFACE
+This project present a Tacx T1932 USB controller as a BLE FTMS machine.
+CPC and BAT services are also exposed through the BLE interface.
 
-This Project shall connect bike sensors and HR sensors to a Raspberry Pi.
-The Raspberry can connect to Zwift, Rouvy, Kinomap... as a FTMS machine (smart trainer)
-The Raspberry uses the callback from the Apps to set the resisance of the Cycling Trainer.(Sets a servo).
-I build a Resistance unit like Stac Zero. to be controlled.
+This is a fork from https://github.com/roethigj/MyBleTrainer for the BLE bridge and server
+merged with https://github.com/360manu/kettlerUSB2BLE for the Tacx T1932 interface
 
-readme is outdated!!!! 
+## Other source of information
+* Kettler Ergorace USB to BLE FTMS service: https://github.com/360manu/kettlerUSB2BLE
+* Daum ergobike 8008TRS USB to BLE FTMS server: https://github.com/weinzmi/daumUSB2BLE
+* Bleno: https://github.com/noble/bleno
 
-## prerequisites
-* RS232 to USB converter
-* RS232 custom gender changer or "programing cable" like specified from DAUM
-* raspberry pi zero w / 3B+ with BLE (Bluetooth low energy) onboard
-* nodejs (10.xx.x LTS) installed https://nodejs.org/en/
+## Prerequisites
+* Tacx T1932 controller
+* BLE (Bluetooth low energy)
+* NodeJS installed (https://nodejs.org)
 
-## setup - Install on a rasperypi
-* download the sources / dependencies listed in package.json
-* have a look at bleno setup https://github.com/noble/bleno
+Tested with a Raspberry Pi 3+ with onboard BLE and nodejs 14.x
+
+## Features
+* Detect T1932 attaching and detaching
+* BLE FTMS service
+* Web server to visualize data and control some actions:
+** Data from T1932
+** Data from BLE apps
+** Internal data
+** Logs and traces
+* Applications
+  * Kinomap
+  * ZWIFT
+  * Bkool
+  * FuelGaz
+  * Rouvy AR
+
+## Work in progress
+Testing ... testing ... testing...
+* connect and manage ANT HR and speed cadence sensors
+* connect and manage BLE HR and speed cadence sensors
+* dynamicaly set simulation parameters (mass, ...)
+* more ...
+
+## Setup
+
+This is my install on a rasperypi with DietPi as the operating system (https://dietpi.com).
+
+### bluetooth configuration
+
+### software dependencies
+
+### install
 
 ```shell
 npm install
 ```
 
-it can take a while as bleno must be compiled from sources.
+it can take a while as some packages must be compiled from sources.
 
 ## launch
 * if SIM mode is a feature you want to use, edit the parameters in config.yml to fit yours
 ```
-simulation:
-    maxGrade: 16 // maximum grade, higher than this, will be cut
-    mRider: 78 // weight of you, the rider
-    mBike: 9 // weight of your bike
-
-gearbox: // this are the gear ratios used for each gear
-    g1: 1.36
-    g2: 1.48
-    g3: 1.62
-    g4: 1.79
-    g5: 2.00
-    g6: 2.17
-    g7: 2.38
-    g8: 2.63
-    g9: 2.94
-    g10: 3.33
-    g11: 3.57
-    g12: 3.85
-    g13: 4.17
-    g14: 4.55
-```
-
-## GIOPs for shifting gears
-* if you want to use 2 external buttons for shifting gears, edit the parameters in config.yml to fit yours
-```
-gpio:
-    geargpio: 1 // start gear for initializing
-    ratio: 1 // how many gears are shifted with one push of a button
-    minGear: 1 // lowest gear possible
-    maxGear: 14 // highest gear possible; has to match gearbox
-    debounceTimeout: 10
-    shiftUpPin: 4 // GPIO pin for shift up
-    shiftDownPin: 17 // GPIO pin for shift down
+physics:
+    max_grade: 11     // maximum grade, higher than this, will be cut
+    mass_rider: 89    // weight of you, the rider
+    mass_bike: 11     // weight of your bike
 ```
 
 * go to installation directory and start node server from command line
@@ -69,14 +70,16 @@ sudo node server.js
 ```
 ### you can install the server as a service, to just plug the raspberry to a power source and ride on
 
-* copy ergoFACE.service from lib\systemd\system to your local system (this is an example for Raspbian Stretch)
+* create ftms.service
 ```shell
-sudo chmod 644 /lib/systemd/system/ergoFACE.service
+sudo cat > /lib/systemd/system/FTMS.service < EOF
+EOF
+sudo chmod 644 /lib/systemd/system/FTMS.service
 ```
 * configure
 ```shell
 sudo systemctl daemon-reload
-sudo systemctl enable ergoFACE.service
+sudo systemctl enable FTMS.service
 ```
 * reboot
 ```shell
@@ -84,28 +87,24 @@ sudo reboot
 ```
 * check status of service
 ```shell
-sudo systemctl status ergoFACE.service
+sudo systemctl status FTMS.service
 ```
 
 * plug the RS232 to USB converter in any USB port
 * start your Daum ergobike 8008 TRS
-* ergoFACE will lookup for the cockpit address and start receiving data
 * start an app like ZWIFT and your Daum bike will appear as "DAUM Ergobike 8008 TRS" device with two services (power & FTMS)
 
 ## website / server
 * start your browser and enter "pi-adress:3000" (try to get fixed IP address for you raspberry on your router before)
-you can follow the ergoFACE activity on a this website.
+you can follow the Virtual Smart Trainer activity on a this website.
+
 It will display the current power, rpm, speed
 the current gear and program your Daum is running and the socket messages.
 This site is used to toggle between ERG and SIM mode and toggle between switching gears or just power
 ### you can use the server to:
 * see current data from Daum Ergobike
 * see power calculation (simulation), grade (slope), Cw (aerodynamic drag coefficient)
-* see current program & gear
 * stop / restart RS232 interface via server
-* select gears
-* select program
-* toggle set Power / switch gears
 * toggle socket messages - key / raw / error
 
 ## current features 0.6.4 BETA

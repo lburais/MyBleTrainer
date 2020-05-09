@@ -25,7 +25,7 @@ tacxUSB:
     vendorid: 0x3561
     productid: 0x1932
     datalog: true
-    simulation: false
+    simulation: true
     datafile: ""
     period: 500
     powercurve: "trainers/power_calc_factors_imagic.txt"

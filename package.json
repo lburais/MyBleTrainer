@@ -21,19 +21,21 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "bleno": "git+https://github.com/abandonware/bleno.git",
-    "bluetooth-hci-socket": "git+https://github.com/abandonware/node-bluetooth-hci-socket.git",
-    "noble": "git+https://github.com/abandonware/noble.git",
-    "config-yml": "^0.10.3",
     "ant-plus": "latest",
     "async": "^3.2.0",
+    "bleno": "git+https://github.com/abandonware/bleno.git",
+    "bluetooth-hci-socket": "git+https://github.com/abandonware/node-bluetooth-hci-socket.git",
+    "config-yml": "^0.10.3",
     "ejs": "^3.0.1",
     "express": "^4.17.1",
+    "moment": "^2.25.3",
+    "noble": "git+https://github.com/abandonware/noble.git",
     "nodemon": "^1.14.3",
     "q": "^1.4.1",
     "socket.io": "^2.3.0",
     "usb": "^1.6.3",
     "utf-8-validate": "^5.0.2",
+    "webusb": "^2.0.2",
     "winston": "^3.2.1"
   }
 }

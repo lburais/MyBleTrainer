@@ -11,7 +11,8 @@ const config = require('config-yml')
 const fs = require('fs')
 var usb = require('usb')
 var easyusb = require('../lib/easyUSB')
-//var physics = require('../lib/physics')
+const path = require('path')
+const moduleName = path.win32.basename(module.filename)
 
 function tacxUSB() {
 
@@ -44,17 +45,17 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.run = function() {
-    if (tacxUSB_debug) logger.info('[tacxUSB.js] - run')
-    self.emitter.emit('key', '[tacxUSB.js] - run')
+    if (tacxUSB_debug) logger.info(`[${moduleName}] run`)
+    self.emitter.emit('key', 'run')
 
     var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
     if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-      if (tacxUSB_debug) logger.info('[tacxUSB.js] - found Tacx T1932')
-        self.emitter.emit('key', '[tacxUSB.js] - attaching Tacx T1932')
+      if (tacxUSB_debug) logger.info(`[${moduleName}] found Tacx T1932`)
+        self.emitter.emit('key', 'attaching Tacx T1932')
       self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
       self.init()
     } else if (tacxUSB_simulation) {
-      if (tacxUSB_debug) logger.info('[tacxUSB.js] - simulate')
+      if (tacxUSB_debug) logger.info(`[${moduleName}] simulate`)
       self.init()
     }
 
@@ -64,8 +65,8 @@ function tacxUSB() {
 
     usb.on('attach', function(device){
       if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-        logger.warn('[tacxUSB.js] - attaching Tacx T1932')
-        self.emitter.emit('key', '[tacxUSB.js] - attaching Tacx T1932')
+        logger.warn(`[${moduleName}] attaching Tacx T1932`)
+        self.emitter.emit('key', 'attaching Tacx T1932')
         self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
         self.init()
       }
@@ -77,8 +78,8 @@ function tacxUSB() {
 
     usb.on('detach', function(device) {
       if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-        logger.warn('[tacxUSB.js] - detaching Tacx T1932')
-        self.emitter.emit('key', '[tacxUSB.js] - detaching Tacx T1932')
+        logger.warn(`[${moduleName}] detaching Tacx T1932`)
+        self.emitter.emit('key', 'detaching Tacx T1932')
         if (self.deviceUSB) self.deviceUSB.close( function() {self.deviceUSB = undefined})
         if (self.intervalUSB) clearInterval(self.intervalUSB)
         self.deviceUSB = undefined
@@ -93,8 +94,8 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.init = function() {
-    if (tacxUSB_debug) logger.info('[tacxUSB.js] - init')
-    self.emitter.emit('key', '[tacxUSB.js] - init')
+    if (tacxUSB_debug) logger.info(`[${moduleName}] init`)
+    self.emitter.emit('key', 'init')
 
     if (self.deviceUSB || tacxUSB_simulation) {
       // load power curve
@@ -119,7 +120,7 @@ function tacxUSB() {
           }
         })
       } catch (err) {
-        logger.error('[tacxUSB.js] - error: ', err)
+        logger.error(`[${moduleName}] error: , ${err}`)
         for( let i=0; i < possfov.length; i++){
           self.powercurve.push( { possfov: 0, reslist: 0, grade: 0, multiplier: 0, additional: 0} )
         }
@@ -130,15 +131,22 @@ function tacxUSB() {
         pc.reslist = reslist[self.powercurve.indexOf(pc)]
       })
 
-      if (tacxUSB_debug) logger.info('self.powercurve: %o', self.powercurve)
+      if (tacxUSB_debug) logger.info(`[${moduleName}] self.powercurve: %o`, self.powercurve)
 
       // open datalogger
       if (tacxUSB_datalog && !tacxUSB_simulation) {
-        if (!fs.existsSync("logs")) fs.mkdirSync("logs")
-        var date = new Date()
-        var filename = "logs/logger_" + date.getFullYear() + date.getMonth() + date.getDate() + "_" + date.getHours() + date.getMinutes() + date.getSeconds() + ".txt"
-        self.datalogger = fs.createWriteStream(filename, {flags: 'a'})
-        self.log = false
+        try {
+          if (!fs.existsSync("logs")) fs.mkdirSync("logs")
+          var date = new Date()
+          var filename = "logs/data_" +
+                         date.getFullYear().toString().padStart(4, '0') + date.getMonth().toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') +
+                         "_" +
+                         date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') +  date.getSeconds().toString().padStart(2, '0') +
+                         ".txt"
+          self.datalogger = fs.createWriteStream(filename, {flags: 'a'})
+        } catch (error) {
+          if (tacxUSB_debug) logger.error(`[${moduleName}] datalogger: ${error}`)
+        }
       }
 
       self.mode = undefined
@@ -147,8 +155,8 @@ function tacxUSB() {
       self.write(Buffer.from([0x02, 0x00, 0x00, 0x00]))
 
       // start read timer
-      if (tacxUSB_debug) logger.info('[tacxUSB.js] - starting timer')
-      self.emitter.emit('key', '[tacxUSB.js] - starting timer')
+      if (tacxUSB_debug) logger.info(`[${moduleName}] starting timer`)
+      self.emitter.emit('key', 'starting timer')
       var interval = setInterval( this.read, tacxUSB_interval )
       self.intervalUSB = interval
     }
@@ -167,7 +175,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.write = function(data) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - write data [${data.length}]: ${data.toString('hex')}`)
+    if (tacxUSB_debug) logger.debug(`[${moduleName}] write data [${data.length}]: ${data.toString('hex')}`)
     if (tacxUSB_datalog && self.datalogger) self.datalog( 'TX ' + data.toString('hex') )
     if (self.deviceUSB) self.deviceUSB.write(data, self.write_error_callback)
   }
@@ -177,7 +185,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.writeCallback = function(error) {
-    if (error) logger.error(`[tacxUSB.js] - write error callback : ${error}`)
+    if (error) logger.error(`[${moduleName}] write error callback : ${error}`)
   }
 
   // /////////////////////////////////////////////////////////////////////////
@@ -187,7 +195,7 @@ function tacxUSB() {
   this.read = function() {
     var millis = Date.now() - self.timeUSB
     self.timeUSB = Date.now()
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - read time: ${millis}ms`)
+    if (tacxUSB_debug) logger.debug(`[${moduleName}] read time: ${millis}ms`)
     if (tacxUSB_simulation) self.readCallback(0, self.readSimulate())
     else if (self.deviceUSB) self.deviceUSB.read(64, self.readCallback)
   }
@@ -198,11 +206,11 @@ function tacxUSB() {
 
   this.readCallback = function(error, data) {
     if (error) {
-      logger.error(`[tacxUSB.js] - read error: ${error}`)
+      logger.error(`[${moduleName}] read error: ${error}`)
       return
     }
 
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - read data [${data.length}]: ${data.toString('hex')}`);
+    if (tacxUSB_debug) logger.debug(`[${moduleName}] read data [${data.length}]: ${data.toString('hex')}`);
 
     if (tacxUSB_datalog && self.datalogger) self.datalog( 'RX '+ data.toString('hex') )
 
@@ -214,71 +222,74 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.receive = function(buffer) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - receive`)
-    if (buffer.length > 40) {
-      var data = {}
-      var pc = undefined
+    try {
+      if (buffer.length > 40) {
+        var data = {}
+        var pc = undefined
 
-      //data.serial = buffer.readUInt16LE(0)
-      //data.fixed1 = buffer.readUInt16LE(2)
-      //data.fixed2 = buffer.readUInt16LE(4)
-      //data.fixed3 = buffer.readUInt16LE(6)
-      //data.year = buffer.readUInt8(8)
-      data.hr = buffer.readUInt8(12)
-      //data.buttons = buffer.readUInt8(13)
-      data.flags = buffer.readUInt8(14)
-      data.distance = buffer.readUInt32LE(24)
-      data.raw_speed = buffer.readUInt16LE(32)     // raw speed = kph * 289.75
-      data.acceleration = buffer.readUInt16LE(34)
-      data.average_load = buffer.readUInt16LE(36)
-      data.current_load = buffer.readUInt16LE(38)
-      data.target_load = buffer.readUInt16LE(40)
-      //data.events = buffer.readUInt8(41)
-      data.pedecho = buffer.readUInt8(42)
-      data.rpm = buffer.readUInt8(44)
+        //data.serial = buffer.readUInt16LE(0)
+        //data.fixed1 = buffer.readUInt16LE(2)
+        //data.fixed2 = buffer.readUInt16LE(4)
+        //data.fixed3 = buffer.readUInt16LE(6)
+        //data.year = buffer.readUInt8(8)
+        data.hr = buffer.readUInt8(12)
+        //data.buttons = buffer.readUInt8(13)
+        data.flags = buffer.readUInt8(14)
+        data.distance = buffer.readUInt32LE(24)
+        data.raw_speed = buffer.readUInt16LE(32)     // raw speed = kph * 289.75
+        data.acceleration = buffer.readUInt16LE(34)
+        data.average_load = buffer.readUInt16LE(36)
+        data.current_load = buffer.readUInt16LE(38)
+        data.target_load = buffer.readUInt16LE(40)
+        //data.events = buffer.readUInt8(41)
+        data.pedecho = buffer.readUInt8(42)
+        data.rpm = buffer.readUInt8(44)
 
-      data.speed = (data.raw_speed/2.8054/100).toFixed(1)    // speed kph
+        data.speed = (data.raw_speed/2.8054/100).toFixed(1)    // speed kph
 
-      self.last_speed = data.speed
+        self.last_speed = data.speed
 
-      if (!(data.flags & 0x02)) data.hr = 0
+        if (!(data.flags & 0x02)) data.hr = 0
 
-      if (self.powercurve[0].possfov != 0 && data.current_load == 0) data.current_load = self.powercurve[0].possfov
+        if (self.powercurve[0].possfov != 0 && data.current_load == 0) data.current_load = self.powercurve[0].possfov
 
-      pc = self.powercurve.find( pc => pc.possfov == data.current_load )
-      if (pc == undefined) {
-        // not an imagic fixed value return- find closest value
-        if (self.powercurve[0].possfov != 0) if (tacxUSB_debug)
-          if (tacxUSB_debug) logger.info(`[tacxUSB.js] - Found variable resistance return value from trainer`)
+        pc = self.powercurve.find( pc => pc.possfov == data.current_load )
+        if (pc == undefined) {
+          // not an imagic fixed value return- find closest value
+          if (self.powercurve[0].possfov != 0) if (tacxUSB_debug)
+            if (tacxUSB_debug) logger.info(`[${moduleName}] Found variable resistance return value from trainer`)
 
-        // possible resistance value to be transmitted to device
-        // reslist = Buffer.from([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000])
-        // possfov = Buffer.from([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000])
-        self.powercurve.forEach( function (pc) {
-          pc.possfov = self.powercurve.indexOf(pc)*1000
-          pc.reslist = self.powercurve.indexOf(pc)*1000
-        })
+          // possible resistance value to be transmitted to device
+          // reslist = Buffer.from([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000])
+          // possfov = Buffer.from([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000])
+          self.powercurve.forEach( function (pc) {
+            pc.possfov = self.powercurve.indexOf(pc)*1000
+            pc.reslist = self.powercurve.indexOf(pc)*1000
+          })
 
-        // find value with minimum distance to reported force
-        var dist = []
-        self.powercurve.forEach( function (pc) {
-          dist.push( abs(pc.possfov - data.current_load) )
-        })
-        var min = Math.min.apply(null, dist)
-        pc = self.powercurve[dist.indexOf(min)]
+          // find value with minimum distance to reported force
+          var dist = []
+          self.powercurve.forEach( function (pc) {
+            dist.push( abs(pc.possfov - data.current_load) )
+          })
+          var min = Math.min.apply(null, dist)
+          pc = self.powercurve[dist.indexOf(min)]
+        }
+
+        data.load = pc.possfov
+        data.force_index = self.powercurve.indexOf(pc)
+
+        // compute power
+        data.power = data.speed * pc.multiplier + pc.additional
+        if (data.power < 0) data.power = 0
+        data.power = data.power.toFixed(1)
+
+        self.emitter.emit('data', data)
+      } else {
+        if (tacxUSB_debug) logger.info(`[${moduleName}] not enough data received: ${buffer.length}`)
       }
-
-      data.load = pc.possfov
-      data.force_index = self.powercurve.indexOf(pc)
-
-      // compute power
-      data.power = data.speed * pc.multiplier + pc.additional
-      if (data.power < 0) data.power = 0
-      data.power = data.power.toFixed(1)
-
-      self.emitter.emit('data', data)
-    } else {
-      if (tacxUSB_debug) logger.info(`[tacxUSB.js] - not enough data received: ${buffer.length}`)
+    } catch (error) {
+        if (tacxUSB_debug) logger.error(`[${moduleName}] exception: ${error}`)
     }
   }
 
@@ -287,7 +298,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.send = function (reslist, pedecho = 0) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - reslist: ${reslist}, pedecho: ${pedecho}`)
+    if (tacxUSB_debug) logger.info(`[${moduleName}] reslist: ${reslist}, pedecho: ${pedecho}`)
 
     var r5=Math.round(reslist) & 0xff    //byte5
     var r6=Math.round(reslist )>>8 & 0xff //byte6
@@ -303,7 +314,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.setPower = function (watt) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - setPower: ${watt}`)
+    if (tacxUSB_debug) logger.info(`[${moduleName}] setPower: ${watt}`)
     self.mode ='ERG'
     self.target_grade = 0
     self.target_power = watt
@@ -322,7 +333,7 @@ function tacxUSB() {
 
     if (tacxUSB_debug) {
       var power = Math.round(self.last_speed * pc.multiplier + pc.additional)
-      logger.info(`[tacxUSB.js] - Power set at: ${power}W vs ${self.target_power}W`)
+      logger.info(`[${moduleName}] Power set at: ${power}W vs ${self.target_power}W`)
     }
 
     self.send( pc.reslist, 0)
@@ -333,7 +344,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.setSimulation = function (windspeed, grade, crr, cw) {
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - setSimulation: ${grade}%`)
+    if (tacxUSB_debug) logger.info(`[${moduleName}] setSimulation: ${grade}%`)
     self.mode ='SIM'
     self.target_grade = grade
     self.target_power = 0
@@ -354,7 +365,7 @@ function tacxUSB() {
     if (tacxUSB_debug) {
       var estimate = self.estimatePower( windspeed, self.target_grade, crr, cw, self.last_speed )
       var speed = Math.round((estimate - pc.additional ) / pc.multiplier)
-      logger.info(`[tacxUSB.js] - Simulation set at: ${power}W vs ${estimate}W for ${self.last_speed}km/h vs ${speed}km/h at ${self.target_grade}%`)
+      logger.info(`[${moduleName}] Simulation set at: ${power}W vs ${estimate}W for ${self.last_speed}km/h vs ${speed}km/h at ${self.target_grade}%`)
     }
 
     return power.toFixed(0)
@@ -412,7 +423,7 @@ function tacxUSB() {
     if (pc == undefined) pc = self.powercurve[0]
     var speed = Math.round((config.physics.avg_power - pc.additional ) / pc.multiplier, 1)
 
-    if (tacxUSB_debug) logger.info(`[tacxUSB.js] - readSimulate for reslist: ${self.target_reslist}/${pc.reslist} and ${config.physics.avg_power}W says ${speed}km/h`)
+    if (tacxUSB_debug) logger.info(`[${moduleName}] readSimulate for reslist: ${pc.reslist} and ${config.physics.avg_power}W says ${speed}km/h`)
 
     internal.writeUInt8(hr.toFixed(0), 12)                         // hr
     internal.writeUInt8(0, 14)                                     // flags
