@@ -9,11 +9,8 @@ process.env.BLENO_HCI_DEVICE_ID="0"; //need internal BLE >4.0
 //process.env.BLENO_ADVERTISING_INTERVAL=200
 const bleno = require('bleno');
 const EventEmitter = require('events');
-const CyclingPowerService = require('./cycling-power-service');
 const FitnessMachineService = require('./fitness-machine-service');
 const DeviceInformationService = require('./device-information-service');
-const RunningSpeedCadenceService = require('./running-speed-cadence-service');
-const BatteryService = require('./battery-service');
 const config = require('config-yml');
 var logger = require('../lib/logger')
 
@@ -37,10 +34,7 @@ class TrainerBLE extends EventEmitter {
 
     this.ftms = new FitnessMachineService(serverCallback);
     this.dis = new DeviceInformationService(options);
-    this.rsc = new RunningSpeedCadenceService();
-    this.csp = new CyclingPowerService();
-    this.bat = new BatteryService();
-    
+
     let self = this;
     if (DEBUG) logger.info(`[smart-trainer.js] - ${this.name} - BLE server starting`);
     self.emit('key', this.name + ' - BLE server starting');
@@ -54,11 +48,7 @@ class TrainerBLE extends EventEmitter {
       if (state === 'poweredOn') {
         bleno.startAdvertising(self.name, [
                 self.ftms.uuid,
-                self.dis.uuid,
-                //self.csp.uuid,
-                //self.rsc.uuid,
-                self.bat.uuid
-        ])
+                self.dis.uuid
       } else {
         if (DEBUG) logger.info('Stopping...');
         bleno.stopAdvertising();
@@ -72,11 +62,8 @@ class TrainerBLE extends EventEmitter {
 
       if (!error) {
         bleno.setServices([
-                self.ftms, 
-                self.dis,
-                //self.csp,
-                //self.rsc,
-                self.bat
+                self.ftms,
+                self.dis
           ],
           (error) => {
             if (DEBUG) logger.info(`[smart-trainer.js] - ${this.name} - setServices: ${(error ? 'error ' + error : 'success')}`)
@@ -112,16 +99,16 @@ class TrainerBLE extends EventEmitter {
       if (DEBUG) logger.info(`[smart-trainer.js] - ${this.name} - rssiUpdate: ${rssi}`);
       self.emit('key', `[smart-trainer.js] - ${this.name} - rssiUpdate: ${rssi}`);
     });
-    
+
     bleno.on('disconnect', (clientAddress) => {
       self.emit('disconnect', clientAddress);
-      self.emit('key', `[smart-trainer.js] - ${this.name} - disconnect - Client: ${clientAddress}`); 
+      self.emit('key', `[smart-trainer.js] - ${this.name} - disconnect - Client: ${clientAddress}`);
     });
-    
+
     // /////////////////////////////////////////////////////////////////////////
     // VirtualTrainer
     // /////////////////////////////////////////////////////////////////////////
-
+/*
     //measuring Force
     this.measure = function(event) {
       wheel_count_1 = event.wheel_count;
@@ -155,7 +142,7 @@ class TrainerBLE extends EventEmitter {
       rim_speed_2 = rim_speed_1;
       wheel_time_2 = time_backcount;
       // wheel_count_2 = count_backcount;
-          
+
       if (event.speed < 8) {
         trainer_const = trainer_const_array.reduce(function(acc, val) { return acc + val; }, 0) / trainer_const_array.length;
         logger.info('trainer_const', trainer_const, trainer_const_array.length)
@@ -163,25 +150,15 @@ class TrainerBLE extends EventEmitter {
         return false;
       }
       return true;
-    }    
+    }
   }
-
+*/
   // /////////////////////////////////////////////////////////////////////////
   // Notify BLE services
   // /////////////////////////////////////////////////////////////////////////
 
   notifyFTMS (event) {
     this.ftms.notify(event)
-    //this.csp.notify(event)
-    //this.rsc.notify(event)
-  }
-
-  notifyCSP (event) {    
-    //this.csp.notify(event)
-  }
-
-  notifyRSC (event) {    
-    //this.rsc.notify(event)
   }
 }
 

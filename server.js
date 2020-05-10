@@ -286,32 +286,52 @@ function serverCallback (message, ...args) {
       }
       break
 
-    case 'simulation': // SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
-      if (webDEBUG) logger.info('[server.js] - Bike in SIM Mode')
-      if (args.length > 3) {
+      case 'simulation': // SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
+        if (webDEBUG) logger.info('[server.js] - Bike in SIM Mode')
+        if (args.length > 3) {
 
-        // crr and windspeed values sent from ZWIFT / FULLGAZ are crazy, specially FULLGAZ, when starting to decent, this drives up the wattage to above 600W
-        var windspeed = Number(args[0]).toFixed(1)
-        var grade = Number(args[1]).toFixed(1)
-        var crr = Number(args[2]).toFixed(4)       // coefficient of rolling resistance
-        var cw = Number(args[3]).toFixed(2)        // coefficient of drag
+          // crr and windspeed values sent from ZWIFT / FULLGAZ are crazy, specially FULLGAZ, when starting to decent, this drives up the wattage to above 600W
+          var windspeed = Number(args[0]).toFixed(1)
+          var grade = Number(args[1]).toFixed(1)
+          var crr = Number(args[2]).toFixed(4)       // coefficient of rolling resistance
+          var cw = Number(args[3]).toFixed(2)        // coefficient of drag
 
-        io.emit('raw', '[server.js] - Bike SIM Mode - [wind]: ' + windspeed + ' [grade]: ' + grade + ' [crr]: ' + crr + ' [cw]: ' + cw)
-        io.emit('windspeed', windspeed)
-        io.emit('grade', grade)
-        io.emit('crr', crr)
-        io.emit('cw', cw)
+          io.emit('raw', '[server.js] - Bike SIM Mode - [wind]: ' + windspeed + ' [grade]: ' + grade + ' [crr]: ' + crr + ' [cw]: ' + cw)
+          io.emit('windspeed', windspeed)
+          io.emit('grade', grade)
+          io.emit('crr', crr)
+          io.emit('cw', cw)
 
-        var simpower = 0
-        if (tacxRUN) simpower = tacx_usb.setSimulation( windspeed, grade, crr, cw)
+          var simpower = 0
+          if (tacxRUN) simpower = tacx_usb.setSimulation( windspeed, grade, crr, cw)
 
-        if (webDEBUG) logger.info(`[server.js] - SIM calculated power:  ${simpower}W`)
-        io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
-        io.emit('simpower', simpower)
-        io.emit('control', 'SIM MODE')
-        success = true
-      }
-      break
+          if (webDEBUG) logger.info(`[server.js] - SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${simpower}W`)
+          io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
+          io.emit('simpower', simpower)
+          io.emit('control', 'SIM MODE')
+          success = true
+        }
+        break
+
+        case 'grade': // SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
+          if (webDEBUG) logger.debug('[server.js] - Bike in SIM Mode')
+          if (args.length > 0) {
+
+            var grade = Number(args[0]).toFixed(1)
+
+            io.emit('raw', '[server.js] - Bike SIM Mode - [grade]: ' + grade)
+            io.emit('grade', grade)
+
+            var simpower = 0
+            if (tacxRUN) simpower = tacx_usb.setSimulation( undefined, grade, undefined, undefined)
+
+            if (webDEBUG) logger.info(`[server.js] - SIM calculated power [grade: ${grade}]:  ${simpower}W`)
+            io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
+            io.emit('simpower', simpower)
+            io.emit('control', 'SIM MODE')
+            success = true
+          }
+          break
   }
   return success
 }

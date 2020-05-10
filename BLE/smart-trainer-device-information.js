@@ -14,7 +14,7 @@ class DIS {
         this.serialNumber = options.serialNumber || 'NA';
         this.firmwareRevision = options.firmwareRevision || 'Dietpi';
         this.hardwareRevision = options.hardwareRevision || '> Rpi 3+';
-        this.softwareRevision = options.softwareRevision || 'node 14.0';
+        this.softwareRevision = options.softwareRevision || 'node 14.x';
         this.manufacturerName = options.manufacturerName || 'nodejs';
         this.certification = options.certification || 0;
         this.pnpId = options.pnpId || 0;

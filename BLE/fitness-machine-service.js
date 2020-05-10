@@ -4,7 +4,7 @@
 // BLE Fitness Machine Service 0x1826
 //
 // The Fitness Machine Service (FTMS) exposes training-related data in the
-// sports and fitness environment, which allows a Client to collect 
+// sports and fitness environment, which allows a Client to collect
 // training data while a user is exercising with a fitness machine (Server).
 //
 // Spec: https://www.bluetooth.com/specifications/gatt/services/
@@ -27,7 +27,7 @@ class FitnessMachineService extends Bleno.PrimaryService {
     super({
       uuid: '1826',
       characteristics: [
-        new StaticReadCharacteristic('2ACC', 'Fitness Machine Feature', [ 
+        new StaticReadCharacteristic('2ACC', 'Fitness Machine Feature', [
           // section 4.3 of FTMS protocol
           // 4 bytes Fitness Machine Features - 4 bytes Target Setting Features
           0x02, // b1: cadence - check -> b0: average speed, b3: inclination, b5: pace
@@ -37,8 +37,8 @@ class FitnessMachineService extends Bleno.PrimaryService {
           0x0A, // b1, inclination target, b3: power target
           0x20, // b13: indoor bike simulation
           0x00,
-          0x00 
-        ]), 
+          0x00
+        ]),
         indoorBikeData,
         controlPoint,
         fitnessMachineStatus,
@@ -60,7 +60,7 @@ class FitnessMachineService extends Bleno.PrimaryService {
   }
 
   /*
-   * Transfer event from daum USB to the given characteristics
+   * Transfer event from USB to the given characteristics
    */
   notify (event) {
     this.indoorBikeData.notify(event)

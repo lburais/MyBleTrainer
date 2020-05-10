@@ -19,19 +19,24 @@ physics:
     mass_rider: 89
     mass_bike: 11
     avg_power: 200
+    windspeed: 0.0
+    crr: 0.005
+    cw: 0.321
 
 tacxUSB:
     debug: true
     vendorid: 0x3561
     productid: 0x1932
     datalog: true
-    simulation: true
+    simulation: false
     datafile: ""
     period: 500
     powercurve: "trainers/power_calc_factors_imagic.txt"
     speed_min: 10
     power_step: 5
     power_max: 800
+    rpm: false
+    hr: false
 
 trainerANT:
     debug: true

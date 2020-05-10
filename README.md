@@ -26,11 +26,12 @@ Tested with a Raspberry Pi 3+ with onboard BLE and nodejs 14.x
 ** Internal data
 ** Logs and traces
 * Applications
-  * Kinomap
-  * ZWIFT
-  * Bkool
-  * FuelGaz
-  * Rouvy AR
+  * Kinomap (https://www.kinomap.com)
+  * ZWIFT (https://zwift.com)
+  * Bkool (https://www.bkool.com)
+  * FulGaz (https://fulgaz.com)
+  * Rouvy AR (https://rouvy.com)
+  * GoldenCheetah (http://www.goldencheetah.org)
 
 ## Work in progress
 Testing ... testing ... testing...
@@ -45,11 +46,24 @@ This is my install on a rasperypi with DietPi as the operating system (https://d
 
 ### bluetooth configuration
 
+```shell
+systemctl stop bluetooth
+systemctl disable bluetooth
+hciconfig hci0 up
+```
+
 ### software dependencies
+
+```shell
+apt install -y git build-essential bluetooth bluez libbluetooth-dev libudev-dev
+apt install -y python-dev
+```
 
 ### install
 
 ```shell
+git clone https://github.com/lburais/MyBleTrainer.git
+cd MyBleTrainer
 npm install
 ```
 
@@ -73,6 +87,30 @@ sudo node server.js
 * create ftms.service
 ```shell
 sudo cat > /lib/systemd/system/FTMS.service < EOF
+[Unit]
+Description=Virtual Smart Trainer service
+Requires=bluetooth.service network-online.target
+After=bluetooth.service network-online.target
+
+
+[Service]
+ExecStart=/usr/bin/node /home/pi/server.js
+# Required on some systems
+#WorkingDirectory=/home/pi
+Restart=always
+# Restart service after 10 seconds if node service crashes
+RestartSec=10
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=nodejs-example
+#User=<alternate user>
+#Group=<alternate group>
+Environment=NODE_ENV=production PORT=3000
+
+[Install]
+WantedBy=multi-user.target
+
 EOF
 sudo chmod 644 /lib/systemd/system/FTMS.service
 ```
