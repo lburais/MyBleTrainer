@@ -157,7 +157,7 @@ class FitnessControlPoint extends Bleno.Characteristic {
         }
         break
       case ControlPointOpCode.setTargetInclincation:
-        var grade = data.readInt16LE(1)  * 0.01
+        var grade = data.readInt16LE(1)  * 0.1
         if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - ControlPointOpCode.setTargetInclincation - grade: ${grade}`)
         if (this.serverCallback('grade', grade)) {
           callback(this.buildResponse(state, ResultCode.success))

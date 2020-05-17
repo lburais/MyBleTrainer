@@ -1,6 +1,6 @@
 {
   "name": "VirtualSmartTrainer",
-  "version": "0..1",
+  "version": "0.1.0",
   "description": "Bridge between USB trainer and BLE client",
   "keywords": "Tacx T1932 FTMS",
   "bugs": {
@@ -21,21 +21,24 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "ant-plus": "latest",
-    "async": "^3.2.0",
+    "@abandonware/bleno": "git+https://github.com/abandonware/bleno.git",
+    "@abandonware/bluetooth-hci-socket": "git+https://github.com/abandonware/node-bluetooth-hci-socket.git",
+    "@abandonware/noble": "git+https://github.com/abandonware/noble.git",
+    "ant-plus": "^0.1.24",
     "bleno": "git+https://github.com/abandonware/bleno.git",
     "bluetooth-hci-socket": "git+https://github.com/abandonware/node-bluetooth-hci-socket.git",
     "config-yml": "^0.10.3",
     "ejs": "^3.0.1",
     "express": "^4.17.1",
+    "foundation-sites": "^6.6.3",
+    "html": "^1.0.0",
+    "jquery": "^3.5.1",
     "moment": "^2.25.3",
     "noble": "git+https://github.com/abandonware/noble.git",
-    "nodemon": "^1.14.3",
-    "q": "^1.4.1",
     "socket.io": "^2.3.0",
     "usb": "^1.6.3",
     "utf-8-validate": "^5.0.2",
-    "webusb": "^2.0.2",
+    "what-input": "^5.2.7",
     "winston": "^3.2.1"
   }
 }

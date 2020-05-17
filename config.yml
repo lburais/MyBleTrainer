@@ -20,8 +20,8 @@ physics:
     mass_bike: 11
     avg_power: 200
     windspeed: 0.0
-    crr: 0.005
-    cw: 0.321
+    crr: 0.0033
+    cw: 0.34
 
 tacxUSB:
     debug: true
@@ -31,6 +31,7 @@ tacxUSB:
     simulation: false
     datafile: ""
     period: 500
+    count: 2
     powercurve: "trainers/power_calc_factors_imagic.txt"
     speed_min: 10
     power_step: 5

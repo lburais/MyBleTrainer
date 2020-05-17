@@ -23,6 +23,7 @@ function tacxUSB() {
   self.emitter = new EventEmitter()
   self.powercurve = undefined
   self.datalogger = undefined
+  self.counter = 1
 
   var tacxUSB_debug = config.tacxUSB.debug || config.globals.debugUSB
   var tacxUSB_vid = config.tacxUSB.vendorid
@@ -32,6 +33,7 @@ function tacxUSB() {
   var tacxUSB_interval = config.tacxUSB.period
   var tacxUSB_powercurve = config.tacxUSB.powercurve
   var tacxUSB_simulation = config.tacxUSB.simulation
+  var tacxUSB_count = config.tacxUSB.count
   var tacxUSB_rpm = config.tacxUSB.rpm
   var tacxUSB_hr = config.tacxUSB.hr
 
@@ -51,11 +53,13 @@ function tacxUSB() {
     self.emitter.emit('key', 'run')
 
     var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
-    if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
-      if (tacxUSB_debug) logger.info(`[${moduleName}] found Tacx T1932`)
-        self.emitter.emit('key', 'attaching Tacx T1932')
-      self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
-      self.init()
+    if (device) {
+      if (device.deviceDescriptor.idVendor == tacxUSB_vid && device.deviceDescriptor.idProduct == tacxUSB_pid) {
+        if (tacxUSB_debug) logger.info(`[${moduleName}] found Tacx T1932`)
+          self.emitter.emit('key', 'attaching Tacx T1932')
+        self.deviceUSB = easyusb([[tacxUSB_vid, tacxUSB_pid]])
+        self.init()
+      }
     } else if (tacxUSB_simulation) {
       if (tacxUSB_debug) logger.info(`[${moduleName}] simulate`)
       self.init()
@@ -133,7 +137,7 @@ function tacxUSB() {
         pc.reslist = reslist[self.powercurve.indexOf(pc)]
       })
 
-      if (tacxUSB_debug) logger.info(`[${moduleName}] self.powercurve: %o`, self.powercurve)
+      if (tacxUSB_debug) logger.info(`[${moduleName}] self.powercurve: ${JSON.stringify(self.powercurve)}`)
 
       // open datalogger
       if (tacxUSB_datalog && !tacxUSB_simulation) {
@@ -152,6 +156,7 @@ function tacxUSB() {
       }
 
       self.mode = undefined
+      self.counter = 1
 
       // will not read cadence until initialisation byte is sent
       self.write(Buffer.from([0x02, 0x00, 0x00, 0x00]))
@@ -250,6 +255,7 @@ function tacxUSB() {
         if (tacxUSB.rpm) data.rpm = buffer.readUInt8(44)
 
         data.speed = (data.raw_speed/2.8054/100).toFixed(1)    // speed kph
+        //data.speed = 10.0
 
         self.last_speed = data.speed
 
@@ -281,6 +287,7 @@ function tacxUSB() {
         }
 
         data.load = pc.possfov
+        data.resist = pc.reslist
         data.force_index = self.powercurve.indexOf(pc)
 
         // compute power
@@ -288,7 +295,11 @@ function tacxUSB() {
         if (data.power < 0) data.power = 0
         data.power = data.power.toFixed(1)
 
-        self.emitter.emit('data', data)
+        if (self.counter == tacxUSB_count) {
+          // send one frame out of tacxUSB_count
+          self.emitter.emit('data', data)
+          self.counter = 1
+        } else self.counter ++
       } else {
         if (tacxUSB_debug) logger.warn(`[${moduleName}] not enough data received: ${buffer.length}`)
       }
@@ -309,6 +320,7 @@ function tacxUSB() {
     var byte_ints = Buffer.from([0x01, 0x08, 0x01, 0x00, r5, r6, pedecho, 0x00 ,0x02, 0x52, 0x10, 0x04])
 
     self.write(byte_ints)
+    self.counter = 1 // reset counter to wait for consignee to be applied
 
     self.target_reslist = reslist
   }
@@ -327,20 +339,23 @@ function tacxUSB() {
     if (watt > config.tacxUSB.power_max) watt = config.tacxUSB.power_max
 
     // find power curve entry immediately above to target power
+    // force min speed
     var pc = self.powercurve.reduce( function (prev, curr) {
-      var prev_power = Math.round(self.last_speed * prev.multiplier + prev.additional)
-      var curr_power = Math.round(self.last_speed * curr.multiplier + curr.additional)
+      var prev_power = Math.round(Math.maximum(self.last_speed,config.tacxUSB.speed_min) * prev.multiplier + prev.additional)
+      var curr_power = Math.round(Math.maximum(self.last_speed,config.tacxUSB.speed_min) * curr.multiplier + curr.additional)
       return (Math.abs(curr_power - self.target_power) <
               Math.abs(prev_power - self.target_power) ? curr : prev)
     })
     if (pc == undefined) pc = self.powercurve[0]
 
-    if (tacxUSB_debug) {
-      var power = Math.round(self.last_speed * pc.multiplier + pc.additional)
-      logger.info(`[${moduleName}] Power set at: ${power}W vs ${self.target_power}W with resistance at ${pc.reslist}/${self.powercurve.indexOf(pc)}`)
-    }
+    var power = Math.round(Math.maximum(self.last_speed,config.tacxUSB.speed_min) * pc.multiplier + pc.additional)
+
+    if (tacxUSB_debug) logger.info(`[${moduleName}] Power set at: ${power}W vs ${self.target_power}W with resistance at ${pc.reslist}/${self.powercurve.indexOf(pc)}`)
 
     self.send( pc.reslist, 0)
+
+    return power.toFixed(0)
+
   }
 
   // /////////////////////////////////////////////////////////////////////////
@@ -356,10 +371,7 @@ function tacxUSB() {
     if (grade > config.tacxUSB.max_grade) grade = config.tacxUSB.max_grade
 
     // find power curve entry immediately above to target grade
-    var pc = self.powercurve.reduce( function (prev, curr) {
-      return (Math.abs(curr.grade - self.target_grade) <
-              Math.abs(prev.grade - self.target_grade) ? curr : prev)
-    })
+    var pc = self.powercurve.find( pc => pc.grade >= self.target_grade )
 
     if (pc == undefined) pc = self.powercurve[0]
 

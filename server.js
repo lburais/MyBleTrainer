@@ -8,8 +8,10 @@
 
 var express = require('express')
 var app = require('express')()
-var server = require('http').createServer(app) // for getting IP dynamicaly in index.ejs
-var io = require('socket.io')(server) // for getting IP dynamicaly in index.ejs
+var server = require('http').createServer(app)
+var io = require('socket.io')(server)
+//var mdb = require('mdbootstrap')
+
 var path = require('path')
 const { version } = require('./package.json')
 const config = require('config-yml')
@@ -69,7 +71,6 @@ if (bleRUN) {
     if ('hr' in data) io.emit('hr', data.hr)
 
     smart_trainer.notifyFTMS(data)
-    //smart_trainer.notifyCSP(data)
   })
 }
 
@@ -83,7 +84,7 @@ if (antRUN) {
 
   trainer_ant.on('notifications_true', () => {
     smart_trainer_init ();
-    trainer_ble.discon(); //prefer Ant over BLE Sensors
+    if (bleRUN) trainer_ble.discon(); //prefer Ant over BLE Sensors
   });
 
   trainer_ant.on('notified', data => {
@@ -108,7 +109,6 @@ if (antRUN) {
 
     if (!measuring) {
       smart_trainer.notifyFTMS(data)
-      //smart_trainer.notifyCSP(data)
     }
     else {
       measuring = smart_trainer.measure(data)
@@ -150,32 +150,32 @@ if (tacxRUN) {
   tacx_obs.on('data', data => {
     if (webDEBUG) logger.info('[server.js] - data: ' + JSON.stringify(data))
     if ('speed' in data) io.emit('speed', data.speed)
-    if ('speed' in data) global.speed = data.speed
     if ('power' in data) io.emit('power', data.power)
+    if ('load' in data) io.emit('power', data.power)
     if ('hr' in data) io.emit('hr', data.hr)
     if ('rpm' in data) io.emit('rpm', data.rpm)
     if ('force_index' in data) io.emit('level', data.force_index)
     smart_trainer.notifyFTMS(data)
-    //smart_trainer.notifyCSP(data)
   })
 }
 
 // /////////////////////////////////////////////////////////////////////////
-// server path specification
+// Web server
 // /////////////////////////////////////////////////////////////////////////
 
-app.use('/public/css', express.static(path.join(__dirname, 'public/css')))
-app.use('/public', express.static(path.join(__dirname, 'public')))
-app.use('/lib', express.static(path.join(__dirname, 'lib')))
+
+/*
+app.use('/foundation/css', express.static(path.join(__dirname, 'foundation/css')))
+app.use('/foundation', express.static(path.join(__dirname, 'foundation')))
+app.use('/foundation/js', express.static(path.join(__dirname, 'foundation/js')))
+*/
 app.set('views', path.join(__dirname, 'views'))
-app.set('view engine', 'ejs')
+app.set('view engine', 'html')
+app.engine('html', require('ejs').renderFile)
 app.get('/', function (req, res) {
-  res.render('index')
+  //res.render('index')
+  res.render('ftms.html')
 })
-
-// /////////////////////////////////////////////////////////////////////////
-// server start listening to port 3000
-// /////////////////////////////////////////////////////////////////////////
 
 server.listen(process.env.PORT || config.globals.server, function () {
   // for getting IP dynamicaly in index.ejs and not to enter it manually
@@ -277,10 +277,10 @@ function serverCallback (message, ...args) {
       if (args.length > 0) {
 
         watt = Number(args[0]).toFixed(0)
-        if (tacxRUN) tacx_usb.setPower( watt)
+        if (tacxRUN) var power = tacx_usb.setPower(watt)
 
-        if (webDEBUG) logger.info('[server.js] - Bike in ERG Mode - set Power to: ', watt)
-        io.emit('raw', '[server.js] - Bike in ERG Mode - set Power to: ' + watt)
+        if (webDEBUG) logger.info(`[server.js] - Bike in ERG Mode - set Power to: ${power}W vs ${watt}W`)
+        io.emit('raw', `[server.js] - Bike in ERG Mode - set Power to: ${watt}`)
         io.emit('control', 'ERG MODE')
         success = true
       }
