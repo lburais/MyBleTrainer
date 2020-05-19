@@ -10,10 +10,8 @@ var express = require('express')
 var app = require('express')()
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
-//var mdb = require('mdbootstrap')
 
 var path = require('path')
-const { version } = require('./package.json')
 const config = require('config-yml')
 var logger = require('./lib/logger')
 
@@ -25,10 +23,8 @@ var DEBUG = config.globals.debug
 var webDEBUG = (config.globals.debugWWW || DEBUG)
 var usbDEBUG = (config.globals.debugUSB || DEBUG)
 var antDEBUG = (config.globals.debugANT || DEBUG)
-var bleDEBUG = (config.globals.debugBLE || DEBUG)
 
 var antRUN = config.equipments.trainerANT
-var bleRUN = config.equipments.trainerBLE
 var tacxRUN = config.equipments.tacxUSB
 
 // /////////////////////////////////////////////////////////////////////////
@@ -37,42 +33,6 @@ var tacxRUN = config.equipments.tacxUSB
 
 var smarttrainer = require('./BLE/smart-trainer')
 var smart_trainer; // wait for sensor befor start advertising
-
-// /////////////////////////////////////////////////////////////////////////
-// BLE trainer
-// /////////////////////////////////////////////////////////////////////////
-
-if (bleRUN) {
-  var trainerBLE = require('./trainers/trainerBLE')
-  var trainer_ble = new trainerBLE()
-
-  trainer_ble.on('notifications_true', () => {
-    smart_trainer_init ()
-  });
-
-  trainer_ble.on('notified', data => {
-    // recalculate power if BLE controlled? P = F * v
-
-    if ('rpm' in data) io.emit('rpm', data.rpm)
-    if ('speed' in data) {
-      speedms = Number(data.speed/3.6).toFixed(4)
-      //  servo_gpio.getSpeed(data.speed, watt)
-
-      io.emit('speed', data.speed);
-    }
-    if ('power' in data && controlled == true && brforce > 0) {
-      var tp=brforce * data.speed/3.6
-      data.power = Math.round(tp)
-      io.emit('power', data.power)
-
-    } else {
-      io.emit('power', data.power)
-    }
-    if ('hr' in data) io.emit('hr', data.hr)
-
-    smart_trainer.notifyFTMS(data)
-  })
-}
 
 // /////////////////////////////////////////////////////////////////////////
 // Ant Trainer
@@ -131,6 +91,11 @@ if (tacxRUN) {
 
   tacx_obs = tacx_usb.run()
 
+  tacx_obs.on('log', data => {
+    logger.log(data.level, `[${data.module}] - ${data.msg}`)
+    io.emit('msg', `[${data.module}] - ${data.msg}`)
+  })
+
   tacx_obs.on('error', string => {
     if (webDEBUG) logger.info('[server.js] - error: ' + string)
     io.emit('error', '[server.js] - ' + string)
@@ -144,17 +109,26 @@ if (tacxRUN) {
   tacx_obs.on('raw', string => {
     if (webDEBUG) logger.info('[server.js] - raw: ', string)
     io.emit('raw', string)
-    io.emit('version', version) // emit version number to webserver
+  })
+
+  tacx_obs.on('usb', string => {
+    if (webDEBUG) logger.info('[server.js] - usb: ', string)
+    io.emit('usb', string)
   })
 
   tacx_obs.on('data', data => {
     if (webDEBUG) logger.info('[server.js] - data: ' + JSON.stringify(data))
     if ('speed' in data) io.emit('speed', data.speed)
     if ('power' in data) io.emit('power', data.power)
-    if ('load' in data) io.emit('power', data.power)
+    if ('load' in data) io.emit('load', data.load)
     if ('hr' in data) io.emit('hr', data.hr)
     if ('rpm' in data) io.emit('rpm', data.rpm)
-    if ('force_index' in data) io.emit('level', data.force_index)
+    if ('force_index' in data) io.emit('force_index', data.force_index)
+    if ('resistance' in data) io.emit('resistance', data.resistance)
+    if ('mass' in data) io.emit('mass', data.mass)
+    if ('simpower' in data) io.emit('simpower', data.simpower)
+    if ('simspeed' in data) io.emit('simspeed', data.simspeed)
+    if ('simrpm' in data) io.emit('simrpm', data.simrpm)
     smart_trainer.notifyFTMS(data)
   })
 }
@@ -163,18 +137,14 @@ if (tacxRUN) {
 // Web server
 // /////////////////////////////////////////////////////////////////////////
 
-
-/*
-app.use('/foundation/css', express.static(path.join(__dirname, 'foundation/css')))
-app.use('/foundation', express.static(path.join(__dirname, 'foundation')))
-app.use('/foundation/js', express.static(path.join(__dirname, 'foundation/js')))
-*/
+app.use('/public/css', express.static(path.join(__dirname, 'public/css')))
+app.use('/public', express.static(path.join(__dirname, 'public')))
+app.use('/lib', express.static(path.join(__dirname, 'lib')))
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'html')
 app.engine('html', require('ejs').renderFile)
 app.get('/', function (req, res) {
-  //res.render('index')
-  res.render('ftms.html')
+  res.render('index.html')
 })
 
 server.listen(process.env.PORT || config.globals.server, function () {
@@ -282,6 +252,7 @@ function serverCallback (message, ...args) {
         if (webDEBUG) logger.info(`[server.js] - Bike in ERG Mode - set Power to: ${power}W vs ${watt}W`)
         io.emit('raw', `[server.js] - Bike in ERG Mode - set Power to: ${watt}`)
         io.emit('control', 'ERG MODE')
+        io.emit('setpower', watt)
         success = true
       }
       break
@@ -302,12 +273,12 @@ function serverCallback (message, ...args) {
           io.emit('crr', crr)
           io.emit('cw', cw)
 
-          var simpower = 0
-          if (tacxRUN) simpower = tacx_usb.setSimulation( windspeed, grade, crr, cw)
+          if (tacxRUN) var estimate = tacx_usb.setSimulation( windspeed, grade, crr, cw)
 
-          if (webDEBUG) logger.info(`[server.js] - SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${simpower}W`)
-          io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
-          io.emit('simpower', simpower)
+          if (webDEBUG) logger.info(`[server.js] - SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${estimate.power}W`)
+          io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + estimate.power)
+          io.emit('estimatepower', estimate.power)
+          io.emit('estimatespeed', estimate.speed)
           io.emit('control', 'SIM MODE')
           success = true
         }
@@ -322,12 +293,12 @@ function serverCallback (message, ...args) {
             io.emit('raw', '[server.js] - Bike SIM Mode - [grade]: ' + grade)
             io.emit('grade', grade)
 
-            var simpower = 0
-            if (tacxRUN) simpower = tacx_usb.setSimulation( undefined, grade, undefined, undefined)
+            if (tacxRUN) var estimate = tacx_usb.setSimulation( undefined, grade, undefined, undefined)
 
-            if (webDEBUG) logger.info(`[server.js] - SIM calculated power [grade: ${grade}]:  ${simpower}W`)
-            io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + simpower)
-            io.emit('simpower', simpower)
+            if (webDEBUG) logger.info(`[server.js] - SIM calculated power [grade: ${grade}]:  ${estimate.power}W`)
+            io.emit('raw', '[server.js] - Bike in SIM Mode - set Power to : ' + estimate.power)
+            io.emit('estimatepower', estimate.power)
+            io.emit('estimatespeed', estimate.speed)
             io.emit('control', 'SIM MODE')
             success = true
           }

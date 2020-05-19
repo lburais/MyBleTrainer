@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <!--
+  <link href="./public/css/bootstrap.min.css" rel="stylesheet">
+  <link href="./public/css/bootstrap-toggle.min.css" rel="stylesheet">
+-->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" >
+<link href="./public/css/style.css" rel="stylesheet">
+
+<!--
+<script src="./lib/socket.io.js"></script>
+<script src="./lib/jquery-3.3.1.slim.min.js"></script>
+<script src="./lib/popper.min.js"></script>
+<script src="./lib/bootstrap.min.js"></script>
+<script src="./lib/bootstrap-toggle.min.js"></script>
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+
+<title>Virtual Smart Trainer</title>
+
+<style>
+.progress {
+  margin-bottom: 20px;
+  width: 100%;
+  font-size: 1.2em;
+  font-weight: bold;
+  height: 2rem;
+}
+.alert {
+  margin-bottom: 1px;
+  /* height: 30px;
+  line-height:30px; */
+  padding:2px 2px;
+  max-width: 100%;
+  font-size: 0.75em;
+}
+.jumbotron {
+  padding: 1rem 1rem;
+}
+.progress-bar {
+  color: #21252C;
+}
+.scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+</style>
+
+<script type="text/javascript">
+var socket = io(); // changed in server.js to get the IP and dont put it in static
+
+///////////////////////////////////////////////////////////////////////////
+// Logs
+///////////////////////////////////////////////////////////////////////////
+
+function addAlert_raw(message) {
+  if ($('#messages_raw').is(':checked'))
+  {
+    $('#alerts').prepend('<div class="alert alert-secondary text-left small"> [Raw]' + new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '') + ': <b>' + message + '</b></div>');
+  }
+};
+socket.on('raw', function (data) {
+  addAlert_raw(data);
+});
+
+function addAlert_msg(message) {
+  if ($('#messages_msg').is(':checked'))
+  {
+    $('#alerts').prepend('<div class="alert alert-info text-left small"> ' + new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '') + ': <b>' + message + '</b></div>');
+  }
+};
+socket.on('msg', function (data) {
+  addAlert_msg(data);
+});
+
+function addAlert_error(message) {
+  $('#alerts').prepend('<div class="alert alert-danger text-left small">[Err] ' + new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '') + ': <b>' + message + '</b></div>');
+};
+socket.on('error', function (data) {
+  addAlert_error(data);
+});
+
+function addAlert_key(message) {
+  if ($('#messages_key').is(':checked'))
+  {
+    $('#alerts').prepend('<div class="alert alert-primary text-left small">[Key] ' + new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '') + ': <b>' + message + '</b></div>');
+  }
+};
+socket.on('key', function (data) {
+  addAlert_key(data);
+});
+
+///////////////////////////////////////////////////////////////////////////
+// Tacx T1932
+///////////////////////////////////////////////////////////////////////////
+
+socket.on('speed', function (data) {
+  $('#speed').html(data);
+  var max = document.getElementById("speed_bar").getAttribute("aria-valuemax");
+  $('#speed_bar').css("width", data / max * 100 + "%");
+  $('#speed_bar').attr("aria-valuenow", data);
+  var progressBar = $('#speed_bar')
+  progressBar.width(data / max * 100 + "%")
+  $('#speed_bar').text(data + " km/h");
+});
+
+socket.on('hr', function (data) {
+  $('#hr').html(data);
+  var max = document.getElementById("hr_bar").getAttribute("aria-valuemax");
+  $('#hr_bar').css("width", data / max * 100 + "bmp");
+  $('#hr_bar').attr("aria-valuenow", data);
+  var progressBar = $('#hr_bar')
+  progressBar.width(data / max * 100 + "bpm")
+  $('#hr_bar').text(data + " bpm");
+});
+
+socket.on('rpm', function (data) {
+  $('#rpm').html(data);
+  var max = document.getElementById("rpm_bar").getAttribute("aria-valuemax");
+  $('#rpm_bar').css("width", data / max * 100 + "%");
+  $('#rpm_bar').attr("aria-valuenow", data);
+  var progressBar = $('#rpm_bar')
+  progressBar.width(data / max * 100 + "%")
+  $('#rpm_bar').text(data + " / min");
+});
+
+socket.on('power', function (data) {
+  $('#power').html(data);
+  var max = document.getElementById("power_bar").getAttribute("aria-valuemax");
+  $('#power_bar').css("width", data / max * 100 + "%");
+  $('#power_bar').attr("aria-valuenow", data);
+  var progressBar = $('#power_bar')
+  progressBar.width(data / max * 100 + "%")
+  $('#power_bar').text(data + " Watt");
+});
+
+socket.on('load', function (data) {
+  $('#load').html(data);
+  var max = document.getElementById("load_bar").getAttribute("aria-valuemax");
+  $('#load_bar').css("width", data / max * 100 + "%");
+  $('#load_bar').attr("aria-valuenow", data);
+  var progressBar = $('#load_bar')
+  progressBar.width(data / max * 100 + "%")
+  $('#load_bar').text(data);
+});
+
+socket.on('resistance', function (data) {
+  $('#resistance').text(data);
+});
+
+socket.on('force_index', function (data) {
+  $('#force_index').attr("value", data);
+});
+
+///////////////////////////////////////////////////////////////////////////
+// Application
+///////////////////////////////////////////////////////////////////////////
+
+socket.on('setpower', function (data) {
+  $('#setpower').text(data);
+});
+
+socket.on('estimatepower', function (data) {
+  $('#estimatepower').text(data);
+});
+
+socket.on('estimatespeed', function (data) {
+  $('#estimatespeed').text(data);
+});
+
+socket.on('windspeed', function (data) {
+  $('#windspeed').text(data);
+});
+
+socket.on('crr', function (data) {
+  $('#crr').text(data);
+});
+
+socket.on('cw', function (data) {
+  $('#cw').text(data);
+});
+
+socket.on('grade', function (data) {
+  $('#grade').text(data);
+});
+
+// socket.on('control', function (data) {
+//   $('#control').text(data);
+//   if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
+//     $('#switch').bootstrapToggle('disable')
+//     $('#mode').bootstrapToggle('disable')
+//   }
+//   if (data === 'disconnected') {
+//     $('#switch').bootstrapToggle('enable')
+//     $('#mode').bootstrapToggle('enable')
+//  }
+//});
+socket.on('version', function (data) {
+  $('#version').text(data);
+});
+
+///////////////////////////////////////////////////////////////////////////
+// Control
+///////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////
+// Functions and interaction
+///////////////////////////////////////////////////////////////////////////
+
+$(function () {
+  var socket = io();
+  $('#restart').click(function(){
+    socket.emit('restart', 'Salut serveur, ça va ?');
+    return false;
+  });
+
+  $('#reconnect').click(function(){
+    socket.emit('reco', 'reco');
+    return false;
+  });
+
+  $('#stop').click(function(){
+    socket.emit('stop', 'stop');
+    return false;
+  });
+
+  $('#start').click(function(){
+    socket.emit('start', 'start');
+    return false;
+  });
+
+});
+
+// Slider Functions
+
+
+function showVal(newVal,caller){
+  if (caller === 'change_min' || caller === 'change_max') {
+    var new_servo_val=[newVal,caller]
+    socket.emit('new_servo_val', new_servo_val);
+  }
+  document.getElementById("servo_val").innerHTML = newVal;
+}
+
+function gearVal(newVal){
+  var new_gear_val=[newVal]
+  socket.emit('new_gear_val', new_gear_val);
+  document.getElementById("gear_val").innerHTML = newVal;
+}
+
+
+</script>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="content">
+      <div class="container-fluid">
+
+        <!--Top Bar-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+          <a class="navbar-brand font-small" href="#">
+            <img src="/docs/4.4/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt="">
+            <b>Virtual Smart Trainer</b></a>
+          </nav>
+          <!--/Top Bar-->
+
+          <!--Main-->
+          <div class="row">
+
+            <!--Column 1-->
+            <div class="col-md-3">
+              <!--Display-->
+              <div class="card text-center">
+                <div class="card-header">
+                  <h5 class="title"><b>Tacx T1932</b></h5>
+                  <p>Communication with Tacx T1932 controller</p>
+                </div>
+
+                <div class="card-body">
+                  <h5 class="title float-left m-2">Resistance</h5>
+                  <h4><span id="resistance" class="badge badge-primary float-right m-2">-</span></h4>
+                  <div class="slidecontainer">
+                    <input type="range" min="0" max="13" value="0" class="slider" id="force_index" style="width: 100%" list="resistancelist">
+                    <datalist id="resistancelist">
+                      <option value="0" label="0">
+                      <option value="1" label="1">
+                      <option value="2" label="2">
+                      <option value="3" label="3">
+                      <option value="4" label="4">
+                      <option value="5" label="5">
+                      <option value="6" label="6">
+                      <option value="7" label="7">
+                      <option value="8" label="8">
+                      <option value="9" label="9">
+                      <option value="10" label="10">
+                      <option value="11" label="11">
+                      <option value="12" label="12">
+                      <option value="13" label="13">
+                    </datalist>
+                  </div>
+                  <div class="container">
+                    <div class="row">
+                      <div class="col-3">
+                        <h5 class="title">Power</h5>
+                      </div>
+                      <div class="col-9">
+                        <div class="progress">
+                          <div id="power_bar" class="progress-bar bg-success" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <h5 class="title">Speed</h5>
+                      </div>
+                      <div class="col-9">
+                        <div class="progress">
+                          <div id="speed_bar" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <h5 class="title">Load</h5>
+                      </div>
+                      <div class="col-9">
+                        <div class="progress">
+                          <div id="load_bar" class="progress-bar bg-alert" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4677"></div>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <h5 class="title">RPM</h5>
+                      </div>
+                      <div class="col-9">
+                        <div class="progress">
+                          <div id="rpm_bar" class="progress-bar bg-info" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <h5 class="title">HR</h5>
+                      </div>
+                      <div class="col-9">
+                        <div class="progress">
+                          <div id="hr_bar" class="progress-bar bg-danger" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!--/Display-->
+
+              <!--Control-->
+              <div class="card text-center">
+                <div class="card-header">
+                  <h5 class="title"><b>Control</b></h5>
+                </div>
+                <div class="card-body">
+                  <h5 class="title float-left m-2">Rider + Bike Mass [kg]</h5>
+                  <h4><span id="mass" class="badge badge-primary float-right m-2">-</span></h4>
+                  <div class="slidecontainer">
+                    <input type="range" min="0" max="120" value="0" class="slider" id="mass" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                  </div>
+                </div>
+              </div>
+              <!--Control-->
+
+              <!--Simulation-->
+              <div class="card text-center">
+                <div class="card-header">
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="tacxUSB_simulation" value="tacxUSB_simulation">
+                    <label class="form-check-label" for="tacxUSB_simulation"><h5 class="title"><b>Simulation</b></h5></label>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h5 class="title float-left m-2">Power [W]</h5>
+                  <h4><span id="power_sim" class="badge badge-primary float-right m-2">-</span></h4>
+                  <div class="slidecontainer">
+                    <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                  </div>
+
+                  <h5 class="title float-left m-2">Speed [km/h]</h5>
+                  <h4><span id="speed_sim" class="badge badge-primary float-right m-2">-</span></h4>
+                  <div class="slidecontainer">
+                    <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                  </div>
+
+                  <h5 class="title float-left m-2">RPM</h5>
+                  <h4><span id="rpm_sim" class="badge badge-primary float-right m-2">-</span></h4>
+                  <div class="slidecontainer">
+                    <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                  </div>
+                </div>
+              </div>
+              <!--/Simulation-->
+            </div>
+            <!--/Column 1-->
+
+            <!--Column 2-->
+            <div class="col-md-3">
+
+              <!--Application-->
+              <div class="card text-center">
+                <div class="card-header">
+                  <h5 class="title"><b>Application</b></h5>
+                </div>
+                <div class="card-body">
+                  <h5 class="title">Set Simulation</h5>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Grade [%]</h6>
+                      <h4><span id="grade" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Cw [kg/m]</h6>
+                      <h4><span id="cw" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Windspeed [m/s]</h6>
+                      <h4><span id="windspeed" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Crr []</h6>
+                      <h4><span id="crr" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                  </ul>
+                  <h5 class="title">Set Power</h5>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Power [W]</h6>
+                      <h4><span id="setpower" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                  </ul>
+                  <h5 class="title">Estimation</h5>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Power calculation [W]</h6>
+                      <h4><span id="estimatepower" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Speed [km/h]</h6>
+                      <h4><span id="estimatespeed" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <!--/Application-->
+
+            </div>
+            <!--/Column 2-->
+
+            <!--Column 3-->
+            <div class="col-md-6">
+              <div class="card card-block d-flex text-center h-100">
+                <div class="card-header">
+                  <h5 class="title"><b>Logs</b></h5>
+                </div>
+                <div class="card-body d-flex">
+                  <div class="container border">
+                    <div class="row">
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="messages_key" value="messages_key" checked>
+                        <label class="form-check-label" for="messages_key">Key</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="messages_msg" value="messages_msg" checked>
+                        <label class="form-check-label" for="messages_msg">Console</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="messages_raw" value="messages_raw">
+                        <label class="form-check-label" for="messages_raw">Raw</label>
+                      </div>
+                    </div>
+                    <div class="row scroll">
+                      <div class="alert" id="alerts"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!--/Column 3-->
+            </div>
+            <!--/Main-->
+
+            <!--Footer-->
+            <footer class="page-footer font-small primary">
+              <div class="footer-copyright text-center py-3">&copy; Copyright Laurent Burais</div>
+            </footer>
+            <!--/Footer-->
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>

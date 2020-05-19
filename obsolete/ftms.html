@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="description" content="">
+        <meta name="author" content="Laurent Burais">
+        <title>Virtual Smart Trainer</title>
+        <!-- Foundation for Sites CSS ./node_modules/foundation-sites/dist/css/foundation.min.css-->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.6.3/dist/css/foundation.min.css">
+        <!-- Custom styles for this template -->
+        <link href="./ftms.css" rel="stylesheet">
+    </head>
+    <body>
+        <!--Topbar-->
+        <div class="title-bar" data-responsive-toggle="responsive-menu" data-hide-for="medium">
+            <h3>Virtual Smart Trainer</h3>
+        </div>
+        <!--/topbar-->
+        <!--Main-->
+        <div class="grid-container">
+            <div class="grid-x">
+                <!--Column 1-->
+                <div class="grid-container large-3">
+                    <div class="cell">
+                        <h4>Tacx T1932</h4>
+                        <p>Communication with Tacx T1932 controller unit</p>
+                        <label for="resistance">Resistance:</label>
+                        <div id="resistance" class="slider" data-slider data-initial-start="1" data-end="14">
+                            <span class="slider-handle" data-slider-handle role="slider" tabindex="1"></span>
+                            <span class="slider-fill" data-slider-fill></span>
+                            <input type="hidden">
+                        </div>
+                        <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="height: 2rem" id="speed">
+                            <div class="progress-meter" style="width: 10%">
+                                <p class="progress-meter-text">Speed</p>
+                            </div>                             
+                        </div>
+                        <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" aria-valuemin="0" aria-valuetext="50 percent" aria-valuemax="800" id="power">
+                            <div class="progress-meter" style="width: 50%">
+                                <p class="progress-meter-text">Power</p>
+                            </div>
+                        </div>
+                        <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" aria-valuemin="0" aria-valuetext="50 percent" aria-valuemax="6000" id="load">
+                            <div class="progress-meter" style="width: 50%">
+                                <p class="progress-meter-text">Load</p>
+                            </div>
+                        </div>
+                        <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" aria-valuemin="0" aria-valuetext="50 percent" aria-valuemax="240" id="hr">
+                            <div class="progress-meter" style="width: 50%">
+                                <p class="progress-meter-text">HR</p>
+                            </div>
+                        </div>
+                        <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" aria-valuemin="0" aria-valuetext="50 percent" aria-valuemax="150" id="rpm">
+                            <div class="progress-meter" style="width: 50%">
+                                <p class="progress-meter-text">RPM</p>
+                            </div>
+                        </div>
+                        <div class="slider" data-slider data-initial-start="1" data-end="14" id="index">
+                            <span class="slider-handle" data-slider-handle role="slider" tabindex="1"></span>
+                            <span class="slider-fill" data-slider-fill></span>
+                            <input type="hidden">
+                        </div>
+                    </div>
+                </div>
+                <!--/Column 1-->
+                <!--Column 2-->
+                <div class="cell large-3">
+                    <h4>Application</h4>
+                </div>
+                <!--/Column 2-->
+                <!--Column 3-->
+                <div class="cell large-6">
+                    <h4>Logs</h4>
+                </div>
+                <!--/Column 3-->
+            </div>
+        </div>
+        <!--/Main-->
+        <!-- ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <!-- Foundation core JavaScript ./node_modules/foundation-sites/dist/js/foundation.min.js -->
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/foundation-sites@6.6.3/dist/js/foundation.min.js"></script>
+        <!-- Custom JavaScript -->
+        <script src="./ftms.js"></script>
+        <script type="text/javascript" src="pgia/lib/pgia.js"></script>
+    </body>
+</html>
