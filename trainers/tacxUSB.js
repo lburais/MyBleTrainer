@@ -5,14 +5,14 @@
 //
 // ========================================================================
 
-var logger = require('../lib/logger')
 var EventEmitter = require('events').EventEmitter
 const config = require('config-yml')
 const fs = require('fs')
 var usb = require('usb')
 var easyusb = require('../lib/easyUSB')
+
 const path = require('path')
-const moduleName = path.win32.basename(module.filename)
+const moduleName = path.win32.basename(module.filename).replace('.js', '')
 
 function tacxUSB() {
 
@@ -49,8 +49,7 @@ function tacxUSB() {
   // /////////////////////////////////////////////////////////////////////////
 
   this.run = function() {
-    if (tacxUSB_debug) logger.info(`[${moduleName}] run`)
-    self.emitter.emit('key', 'run')
+    self.emitter.emit('log', {module: moduleName, level: 'info', msg: `run`})
 
     var device = usb.findByIds(tacxUSB_vid, tacxUSB_pid)
     if (device) {
@@ -60,7 +59,7 @@ function tacxUSB() {
         self.init()
       }
     } else if (tacxUSB_simulation) {
-      if (tacxUSB_debug) logger.info(`[${moduleName}] simulate`)
+      self.emitter.emit('log', {module: moduleName, level: 'info', msg: `simulate`})
       self.init()
     }
 
@@ -122,7 +121,7 @@ function tacxUSB() {
           }
         })
       } catch (err) {
-        logger.error(`[${moduleName}] error: , ${err}`)
+        self.emitter.emit('log', {module: moduleName, level: 'error', msg: `error: , ${err}`})
         for( let i=0; i < possfov.length; i++){
           self.powercurve.push( { possfov: 0, reslist: 0, grade: 0, multiplier: 0, additional: 0} )
         }

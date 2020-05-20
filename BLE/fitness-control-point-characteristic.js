@@ -8,6 +8,9 @@
 // ========================================================================
 
 var logger = require('../lib/logger')
+const path = require('path')
+const moduleName = path.win32.basename(module.filename).replace('.js', '')
+
 var Bleno = require('bleno')
 const config = require('config-yml') // Use config for yaml config files in Node.js projects
 var DEBUG = config.globals.debugBLE;

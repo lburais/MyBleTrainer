@@ -1,14 +1,10 @@
 globals:
-    debug: false
+    debug: true
     debugUSB: false
     debugANT: true
     debugBLE: true
     debugWWW: true
     server: 3000
-
-equipments:
-    trainerANT: false
-    tacxUSB: true
 
 physics:
     debug: true
@@ -23,11 +19,10 @@ physics:
     cw: 0.34
 
 tacxUSB:
-    debug: true
     vendorid: 0x3561
     productid: 0x1932
     datalog: true
-    simulation: false
+    simulation: true
     datafile: ""
     period: 500
     count: 2
@@ -37,6 +32,3 @@ tacxUSB:
     power_max: 800
     rpm: false
     hr: false
-
-trainerANT:
-    debug: true
