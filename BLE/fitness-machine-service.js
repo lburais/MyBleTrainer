@@ -13,10 +13,10 @@
 // ========================================================================
 
 const Bleno = require('bleno')
-const FitnessControlPoint = require('./fitness-control-point-characteristic')
-const IndoorBikeDataCharacteristic = require('./indoor-bike-data-characteristic')
+const FitnessControlPoint = require('./fitness-control-point')
+const IndoorBikeDataCharacteristic = require('./indoor-bike-data')
 const StaticReadCharacteristic = require('./static-read-characteristic')
-const FitnessMachineStatusCharacteristic = require('./fitness-machine-status-characteristic')
+const FitnessMachineStatusCharacteristic = require('./fitness-machine-status')
 
 class FitnessMachineService extends Bleno.PrimaryService {
   constructor (callback) {

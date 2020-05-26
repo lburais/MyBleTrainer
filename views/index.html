@@ -45,6 +45,9 @@
   max-height: 48em;
   overflow-y: auto;
 }
+.list-group-item {
+  height: 3em;
+}
 </style>
 
 <script type="text/javascript">
@@ -78,131 +81,73 @@ function addAlert_msg(message) {
       line +
       '</b></div>')
   }
-};
+}
 socket.on('log', function (data) {
   addAlert_msg(data);
 });
 
-///////////////////////////////////////////////////////////////////////////
-// Data
-///////////////////////////////////////////////////////////////////////////
 
-socket.on('data', function (data) {
-  for (let [key, value] of Object.entries(data)) {
-    try {
-      switch($('#'+key).attr("role")) {
-        case 'progressbar':
+  ///////////////////////////////////////////////////////////////////////////
+  // Data
+  ///////////////////////////////////////////////////////////////////////////
+
+  socket.on('data', function (data) {
+    for (let [key, value] of Object.entries(data)) {
+      try {
+        switch($('#'+key).attr("role")) {
+          case 'progressbar':
           var width = value / $('#'+key).attr("aria-valuemax") * 100
           $('#'+key).attr("aria-valuenow", value);
           $('#'+key).width(width + "%")
           $('#'+key).text(value + $('#'+key).attr("title"));
           break
-        case 'slider':
+          case 'slider':
           $('#'+key).attr("value", value);
           break
-        case 'badge':
+          case 'badge':
           $('#'+key).text(value);
           break
-        default:
+          default:
           break
-      }
-    } catch {}
+        }
+      } catch {}
+    }
+  })
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Functions and interaction
+  ///////////////////////////////////////////////////////////////////////////
+
+  $(function () {
+    var socket = io();
+    $('#restart').click(function(){
+      socket.emit('restart', 'Salut serveur, ça va ?');
+      return false;
+    });
+
+    $('#reconnect').click(function(){
+      socket.emit('reco', 'reco');
+      return false;
+    });
+
+    $('#stop').click(function(){
+      socket.emit('stop', 'stop');
+      return false;
+    });
+
+    $('#start').click(function(){
+      socket.emit('start', 'start');
+      return false;
+    });
+
+  });
+
+  // Slider Functions
+  function newVal(id, value) {
+    const entry = new Map([[id, value]])
+    $('#'+id+'_badge').text(value);
+    socket.emit('data', Object.fromEntries(entry));
   }
-})
-
-///////////////////////////////////////////////////////////////////////////
-// Application
-///////////////////////////////////////////////////////////////////////////
-
-socket.on('setpower', function (data) {
-  $('#setpower').text(data);
-});
-
-socket.on('estimatepower', function (data) {
-  $('#estimatepower').text(data);
-});
-
-socket.on('estimatespeed', function (data) {
-  $('#estimatespeed').text(data);
-});
-
-socket.on('windspeed', function (data) {
-  $('#windspeed').text(data);
-});
-
-socket.on('crr', function (data) {
-  $('#crr').text(data);
-});
-
-socket.on('cw', function (data) {
-  $('#cw').text(data);
-});
-
-socket.on('grade', function (data) {
-  $('#grade').text(data);
-});
-
-// socket.on('control', function (data) {
-//   $('#control').text(data);
-//   if (data === 'SIM MODE' || data === 'ERG MODE') { // as soon as BLE takes over control, the toggle buttons are going to be disabled
-//     $('#switch').bootstrapToggle('disable')
-//     $('#mode').bootstrapToggle('disable')
-//   }
-//   if (data === 'disconnected') {
-//     $('#switch').bootstrapToggle('enable')
-//     $('#mode').bootstrapToggle('enable')
-//  }
-//});
-
-///////////////////////////////////////////////////////////////////////////
-// Control
-///////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////
-// Functions and interaction
-///////////////////////////////////////////////////////////////////////////
-
-$(function () {
-  var socket = io();
-  $('#restart').click(function(){
-    socket.emit('restart', 'Salut serveur, ça va ?');
-    return false;
-  });
-
-  $('#reconnect').click(function(){
-    socket.emit('reco', 'reco');
-    return false;
-  });
-
-  $('#stop').click(function(){
-    socket.emit('stop', 'stop');
-    return false;
-  });
-
-  $('#start').click(function(){
-    socket.emit('start', 'start');
-    return false;
-  });
-
-});
-
-// Slider Functions
-
-
-function showVal(newVal,caller){
-  if (caller === 'change_min' || caller === 'change_max') {
-    var new_servo_val=[newVal,caller]
-    socket.emit('new_servo_val', new_servo_val);
-  }
-  document.getElementById("servo_val").innerHTML = newVal;
-}
-
-function gearVal(newVal){
-  var new_gear_val=[newVal]
-  socket.emit('new_gear_val', new_gear_val);
-  document.getElementById("gear_val").innerHTML = newVal;
-}
-
 
 </script>
 </head>
@@ -228,29 +173,13 @@ function gearVal(newVal){
               <div class="card text-center">
                 <div class="card-header">
                   <h5 class="title"><b>Tacx T1932</b></h5>
-                  </div>
+                </div>
 
                 <div class="card-body">
-                <h5 class="title float-left m-2">Resistance</h5>
+                  <h5 class="title float-left m-2">Resistance</h5>
                   <h4><span id="resistance" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                   <div class="slidecontainer">
                     <input type="range" min="0" max="13" value="0" class="slider" id="force_index" role="slider" style="width: 100%" list="resistancelist" disabled>
-                    <datalist id="resistancelist">
-                      <option value="0">
-                      <option value="1">
-                      <option value="2">
-                      <option value="3">
-                      <option value="4">
-                      <option value="5">
-                      <option value="6">
-                      <option value="7">
-                      <option value="8">
-                      <option value="9">
-                      <option value="10">
-                      <option value="11">
-                      <option value="12">
-                      <option value="13">
-                    </datalist>
                   </div>
                   <div class="container">
                     <div class="row">
@@ -300,21 +229,6 @@ function gearVal(newVal){
               </div>
               <!--/Display-->
 
-              <!--Control-->
-              <div class="card text-center">
-                <div class="card-header">
-                  <h5 class="title"><b>Control</b></h5>
-                </div>
-                <div class="card-body">
-                  <h5 class="title float-left m-2">Rider + Bike Mass [kg]</h5>
-                  <h4><span id="mass-value" class="badge badge-primary float-right m-2">-</span></h4>
-                  <div class="slidecontainer">
-                    <input type="range" min="0" max="120" value="0" class="slider" id="mass" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
-                  </div>
-                </div>
-              </div>
-              <!--Control-->
-
               <!--Simulation-->
               <div class="card text-center">
                 <div class="card-header">
@@ -325,22 +239,28 @@ function gearVal(newVal){
                 </div>
                 <div class="card-body">
                   <h5 class="title float-left m-2">Power [W]</h5>
-                  <h4><span id="power_sim" class="badge badge-primary float-right m-2">-</span></h4>
+                  <h4><span id="power_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
                   <div class="slidecontainer">
-                    <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                    <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
                   </div>
 
                   <h5 class="title float-left m-2">Speed [km/h]</h5>
-                  <h4><span id="speed_sim" class="badge badge-primary float-right m-2">-</span></h4>
+                  <h4><span id="speed_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
                   <div class="slidecontainer">
-                    <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
+                    <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
                   </div>
 
-                  <h5 class="title float-left m-2">RPM</h5>
-                  <h4><span id="rpm_sim" class="badge badge-primary float-right m-2">-</span></h4>
-                  <div class="slidecontainer">
-                    <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="gearVal(this.value, 'input_max')" onchange="gearVal(this.value,'change_max')">
-                  </div>
+                                    <h5 class="title float-left m-2">RPM</h5>
+                                    <h4><span id="rpm_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
+                                    <div class="slidecontainer">
+                                      <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
+                                    </div>
+
+                                                      <h5 class="title float-left m-2">HR</h5>
+                                                      <h4><span id="hr_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
+                                                      <div class="slidecontainer">
+                                                        <input type="range" min="0" max="220" value="0" class="slider" id="hr_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
+                                                      </div>
                 </div>
               </div>
               <!--/Simulation-->
@@ -353,50 +273,73 @@ function gearVal(newVal){
               <!--Application-->
               <div class="card text-center">
                 <div class="card-header">
-                  <h5 class="title"><b>Application</b></h5>
-              </div>
+                  <h5 class="title float-left m-2"><b>Application</b></h5>
+                  <h4><span id="control" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                </div>
                 <div class="card-body">
                   <h5 class="title">Set Simulation</h5>
                   <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Grade [%]</h6>
-                      <h4><span id="grade" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="grade" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Cw [kg/m]</h6>
-                      <h4><span id="cw" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="cw" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Windspeed [m/s]</h6>
-                      <h4><span id="windspeed" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="windspeed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Crr []</h6>
-                      <h4><span id="crr" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="crr" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                   </ul>
                   <h5 class="title">Set Power</h5>
                   <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Power [W]</h6>
-                      <h4><span id="setpower" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="setpower" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                   </ul>
-                  <h5 class="title">Estimation</h5>
+                  <h5 class="title">Physics</h5>
                   <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Power calculation [W]</h6>
-                      <h4><span id="estimatepower" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="last_power" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                       <h6 class="title">Speed [km/h]</h6>
-                      <h4><span id="estimatespeed" class="badge badge-primary float-right m-2">-</span></h4>
+                      <h4><span id="last_speed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Rider + Bike Mass [kg]</h6>
+                      <div class="slidecontainer">
+                        <input type="range" min="0" max="120" value="0" role="slider" class="slider" id="mass" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
+                      </div>
+                      <h4><span id="mass_badge" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Grade [%]</h6>
+                      <h4><span id="last_grade" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Cw [kg/m]</h6>
+                      <h4><span id="last_cw" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Windspeed [m/s]</h6>
+                      <h4><span id="last_windspeed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h6 class="title">Crr []</h6>
+                      <h4><span id="last_crr" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
                     </li>
                   </ul>
                 </div>
               </div>
               <!--/Application-->
-
             </div>
             <!--/Column 2-->
 
@@ -447,7 +390,7 @@ function gearVal(newVal){
                         <input class="form-check-input" type="checkbox" id="messages_error" value="messages_error" checked disabled>
                         <label class="form-check-label" for="messages_error">Error</label>
                       </div>
-                          </div>
+                    </div>
                     <div class="row scroll">
                       <div class="alert" id="alerts"></div>
                     </div>
@@ -466,5 +409,23 @@ function gearVal(newVal){
           </div>
         </div>
       </div>
-    </body>
-    </html>
+      <!--lists-->
+      <datalist id="resistancelist">
+        <option value="0">
+          <option value="1">
+            <option value="2">
+              <option value="3">
+                <option value="4">
+                  <option value="5">
+                    <option value="6">
+                      <option value="7">
+                        <option value="8">
+                          <option value="9">
+                            <option value="10">
+                              <option value="11">
+                                <option value="12">
+                                  <option value="13">
+                                  </datalist>
+
+                                </body>
+                                </html>

@@ -39,6 +39,7 @@
     "usb": "^1.6.3",
     "utf-8-validate": "^5.0.2",
     "what-input": "^5.2.7",
-    "winston": "^3.2.1"
+    "winston": "^3.2.1",
+    "winston-socket.io": "^0.4.0"
   }
 }

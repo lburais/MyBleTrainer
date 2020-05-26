@@ -7,10 +7,8 @@
 //
 // ========================================================================
 
-var logger = require('../lib/logger')
+var message = require('../lib/message')
 var Bleno = require('bleno')
-const config = require('config-yml') 
-var DEBUG = config.globals.debugBLE;
 
 // Spec
 // Status op code
@@ -51,19 +49,19 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - client subscribed')
+    message('client subscribed')
     this._updateValueCallback = updateValueCallback
     return this.RESULT_SUCCESS
   }
 
   onUnsubscribe () {
-    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - client unsubscribed')
+    message('client unsubscribed')
     this._updateValueCallback = null
     return this.RESULT_UNLIKELY_ERROR
   }
 
   notify (event) {
-    if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - notify')
+    message('notify')
     var buffer = new Buffer.from(2)
     // speed + power + heart rate
     buffer.writeUInt8(StatusOpCode.startedResumedUser, 0)
@@ -71,7 +69,7 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
     if (this._updateValueCallback) {
       this._updateValueCallback(buffer)
     } else {
-      if (DEBUG) logger.info('[fitness-machine-status-characteristic.js] - nobody is listening')
+      message('nobody is listening')
     }
     return this.RESULT_SUCCESS
   }

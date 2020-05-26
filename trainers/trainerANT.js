@@ -2,11 +2,11 @@
 // ========================================================================
 // trainerANT.js
 //
-// Manage USB ANT sensors (heart rate and speed cadence) 
+// Manage USB ANT sensors (heart rate and speed cadence)
 //
 // ========================================================================
 
-var logger = require('../lib/logger')
+var message = require('../lib/message')
 const Ant = require('ant-plus');
 const stick = new Ant.GarminStick2();
 var exitHandlerBound = false;
@@ -29,15 +29,15 @@ class trainerANT extends EventEmitter {
         crank_time: 0,
         crank_count: 0
         };
-        
+
     const hrScanner = new Ant.HeartRateScanner(stick);
         hrScanner.on('hbData', data => {
-            //logger.info(`id: ${data.DeviceID}`);
+            message(`id: ${data.DeviceID}`);
             ant_data.hr = data.ComputedHeartRate;
             self.emit('notified', ant_data);
 
         });
-    
+
     hrScanner.on('attached', () => {
         speedCadenceScanner.scan();
         speedScanner.scan();
@@ -47,8 +47,8 @@ class trainerANT extends EventEmitter {
         self.emit('notifications_true');
 
     });
-    
-    
+
+
     const speedCadenceScanner = new Ant.SpeedCadenceScanner(stick);
     speedCadenceScanner.setWheelCircumference(wheel);
     speedCadenceScanner.on('speedData', data => {
@@ -59,37 +59,37 @@ class trainerANT extends EventEmitter {
         ant_data.wheel_time = data.SpeedEventTime;
         ant_data.wheel_count = data.CumulativeSpeedRevolutionCount;
         self.emit('notified', ant_data);
-       // logger.info(`id: ${data.DeviceID}`);
-        //logger.info(ant_data.speed);
+       // message(`id: ${data.DeviceID}`);
+        //message(ant_data.speed);
     });
     speedCadenceScanner.on('cadenceData', data => {
-        let rpm = data.CalculatedCadence;  
+        let rpm = data.CalculatedCadence;
             if (rpm > 300) rpm=0 // cut fake
             ant_data.rpm = rpm;
         ant_data.crank_time = data.CadenceEventTime;
         ant_data.crank_count = data.CumulativeCadenceRevolutionCount;
         self.emit('notified', ant_data);
-        //logger.info(`id: ${data.DeviceID}`);
+        //message(`id: ${data.DeviceID}`);
     });
 
     const speedScanner = new Ant.SpeedScanner(stick);
     speedScanner.setWheelCircumference(wheel);
-    
+
     speedScanner.on('speedData', data => {
         let speed = data.CalculatedSpeed;
         if (speed > 35) speed = 0
         to_watt(data.CalculatedSpeed);
         ant_data.speed = speed*3.6;
         self.emit('notified', ant_data);
-       // logger.info(`id: ${data.DeviceID}`);
-        //logger.info(ant_data.speed);
+        // message(`id: ${data.DeviceID}`);
+        //message(ant_data.speed);
     });
     
     function to_watt (data) {
         let speed_ms = data;
-         
+
         //road bike top
-        let CrEff = 0.4 * 1 * 0.021 + (1.0 - 0.4) * 0.021; 
+        let CrEff = 0.4 * 1 * 0.021 + (1.0 - 0.4) * 0.021;
         let Frg = 9.81 * (9.5 + 75) * (CrEff * Math.cos(0) + Math.sin(0)); // no slope, rider 75 kg, bike 9.5 kg
         Frg = 0 ; // no rider to move
         let CwaBike = 1.5 * (1.1 * 0.0033 + 0.9 * 0.0033 + 0.048); //racing tire, high pressure 0.0033
@@ -99,25 +99,25 @@ class trainerANT extends EventEmitter {
         let power = 1.025 * speed_ms * (Ka * (Math.pow(speed_ms, 2) ) + Frg + speed_ms * 0.1*Math.cos(0)); // simplified - no wind,no slope
         if (power> 5000) power = 0 //cut fake
         ant_data.power = power.toFixed(0)
-    }    
+    }
 
     const cadenceScanner = new Ant.CadenceScanner(stick);
     cadenceScanner.on('cadenceData', data => {
-        ant_data.rpm = data.CalculatedCadence; 
+        ant_data.rpm = data.CalculatedCadence;
         ant_data.crank_time = data.CadenceEventTime;
-        ant_data.crank_count = data.CumulativeCadenceRevolutionCount;       
+        ant_data.crank_count = data.CumulativeCadenceRevolutionCount;
         self.emit('notified', ant_data);
-        //logger.info(`id: ${data.DeviceID}`);
+        //message(`id: ${data.DeviceID}`);
     });
 
 
     stick.on('startup', function() {
-        logger.info('startup');
+        message('startup');
         hrScanner.scan();
     });
 
     if (!stick.open()) {
-        logger.info('Stick not found!');
+        message('Stick not found!');
     }
 
     process.on('SIGINT', () => {

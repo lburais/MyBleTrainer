@@ -1,6 +1,6 @@
 globals:
     debug: true
-    debugUSB: false
+    debugUSB: true
     debugANT: true
     debugBLE: true
     debugWWW: true
@@ -21,8 +21,8 @@ physics:
 tacxUSB:
     vendorid: 0x3561
     productid: 0x1932
-    datalog: true
-    simulation: true
+    datalog: false
+    simulation: false
     datafile: ""
     period: 500
     count: 2
@@ -30,5 +30,5 @@ tacxUSB:
     speed_min: 10
     power_step: 5
     power_max: 800
-    rpm: false
-    hr: false
+    rpm: true
+    hr: true

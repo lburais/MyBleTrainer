@@ -7,10 +7,8 @@
 //
 // ========================================================================
 
-var logger = require('../lib/logger')
+var message = require('../lib/message')
 var Bleno = require('bleno')
-const config = require('config-yml') // Use config for yaml config files in Node.js projects
-var DEBUG = config.globals.debugBLE;
 
 class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
   constructor () {
@@ -29,24 +27,23 @@ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-  if (DEBUG) logger.info('[indoor-bike-data-characteristic.js] - client subscribed')
+    message('client subscribed')
     this._updateValueCallback = updateValueCallback
     return this.RESULT_SUCCESS
   }
 
   onUnsubscribe () {
-    if (DEBUG) logger.info('[indoor-bike-data-characteristic.js] - client unsubscribed')
+    message('client unsubscribed')
     this._updateValueCallback = null
     return this.RESULT_UNLIKELY_ERROR
   }
 
   notify (event) {
-    var line = "[indoor-bike-data-characteristic.js] - notify"
+    var line = "notify"
     if (!('power' in event) && !('hr' in event)) {
       // ignore events with no power and no hr data
       return this.RESULT_SUCCESS
     }
-    if (DEBUG) logger.debug(line)
     var buffer = new Buffer.alloc(10) // changed buffer size from 10 to 8 because of deleting hr
     buffer.writeUInt8(0x44, 0) // 0100 0100 - rpm + power (speed is always on)
     buffer.writeUInt8(0x02, 1) // deleted hr, so all bits are 0
@@ -86,10 +83,10 @@ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
     index += 2
 
     if (this._updateValueCallback) {
-      if (DEBUG) logger.info(line)
+      message(line)
       this._updateValueCallback(buffer)
     } else {
-    if (DEBUG) logger.warn('[indoor-bike-data-characteristic.js] - nobody is listening')
+    message('nobody is listening', 'warn')
     }
     return this.RESULT_SUCCESS
   }

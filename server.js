@@ -10,18 +10,15 @@ var express = require('express')
 var app = require('express')()
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
-
-var logger = require('./lib/logger')
-const path = require('path')
-const moduleName = path.win32.basename(module.filename).replace('.js', '')
-
 const config = require('config-yml')
+const path = require('path')
+
+var message = require('./lib/message')
+
 
 // ////////////////////////////////////////////////////////////////////////
 // Configuration
 // ////////////////////////////////////////////////////////////////////////
-
-var DEBUG = config.globals.debug
 
 // /////////////////////////////////////////////////////////////////////////
 // Smart Trainer instantiation
@@ -46,8 +43,7 @@ app.get('/', function (req, res) {
 
 server.listen(process.env.PORT || config.globals.server, function () {
   // for getting IP dynamicaly in index.ejs and not to enter it manually
-  if (DEBUG) logger.info( `[${moduleName}] listening on port ${process.env.PORT || config.globals.server}`)
-  io.emit('log', {module: moduleName, level: 'info', msg: `listening on port ${process.env.PORT || config.globals.server}`})
+  message(`listening on port ${process.env.PORT || config.globals.server}`)
 })
 
 // /////////////////////////////////////////////////////////////////////////
@@ -106,24 +102,25 @@ var tacx_usb = new tacxUSB()
 tacx_obs = tacx_usb.run()
 
 tacx_obs.on('log', data => {
-  if (DEBUG) logger.log( data.level, `[${data.module}] ${data.msg}`)
-  io.emit('log', data)
+  message(data.msg, data.level)
 })
 
 tacx_obs.on('error', string => {
-  if (DEBUG) logger.error( `[${moduleName}] ${string}`)
-  io.emit('log', {module: moduleName, level: 'error', msg: string})
+  message(string, 'error')
 })
 
 tacx_obs.on('usb', string => {
-  if (DEBUG) logger.info( `[${moduleName}] usb: ${string}`)
-  io.emit('log', {module: moduleName, level: 'info', msg: 'usb: ' + string})
+  message(string)
   io.emit('usb', string)
 })
 
+tacx_obs.on('setup', data => {
+  message('setup: ' + JSON.stringify(data))
+  io.emit('data', string)
+})
+
 tacx_obs.on('data', data => {
-  if (DEBUG) logger.info( `[${moduleName}] ` + JSON.stringify(data))
-  io.emit('log', {module: moduleName, level: 'info', msg: JSON.stringify(data)})
+  message(JSON.stringify(data))
   io.emit('data', data)
   smart_trainer.notifyFTMS(data)
 })
@@ -135,27 +132,33 @@ tacx_obs.on('data', data => {
 
 io.on('connection', socket => {
 
-  if (DEBUG) logger.info( `[${moduleName}] connected to socketio`)
+  message(`connected to socketio`)
 
   socket.on('reset', function (data) {
-    if (DEBUG) logger.info( `[${moduleName}] VirtualTrainer Server started`)
-    io.emit('log', {module: moduleName, level: 'info', msg: 'VirtualTrainer Server started'})
+    message('VirtualTrainer Server started')
   })
 
   socket.on('restart', function (data) {
-    if (DEBUG) logger.info( `[${moduleName}] restarted`)
-    io.emit('log', {module: moduleName, level: 'info', msg: 'restarted'})
+    message('restarted')
   })
 
   socket.on('reco', function (data) {
-    if (DEBUG) logger.info( `[${moduleName}] reconnect`)
-    io.emit('log', {module: moduleName, level: 'info', msg: 'reconnect'})
+    message('reconnect')
     smart_trainer_init ()
   })
 
   socket.on('stop', function (data) {
-    if (DEBUG) logger.info( `[${moduleName}] stopped`)
-    io.emit('log', {module: moduleName, level: 'info', msg: 'stopped'})
+    message('stopped')
+  })
+
+  socket.on('log', function (data) {
+    // forward to client
+    //console.info(JSON.stringify(data))
+    io.emit('log', data.message)
+  })
+
+  socket.on('data', function (data) {
+    tacx_usb.setParameters(data)
   })
 
 })
@@ -174,18 +177,17 @@ function smart_trainer_init () {
   },serverCallback)
 
   smart_trainer.on('disconnect', string => {
+    message(`disconnected: ${string}`)
     io.emit('control', 'disconnected')
   })
 
-  smart_trainer.on('key', string => {
-    io.emit('key', '[server.js] - ' + string)
-  })
-
   smart_trainer.on('error', string => {
+    message(`error: ${string}`, 'error')
     io.emit('error', '[server.js] - ' + string)
   })
 
   smart_trainer.on('accept', string => {
+    message(`accept: ${string}`)
     io.emit('accept', '[server.js] - ' + string)
   })
 }
@@ -194,15 +196,14 @@ function smart_trainer_init () {
 // BLE callback section
 // /////////////////////////////////////////////////////////////////////////
 
-function serverCallback (message, ...args) {
-  if (DEBUG) logger.debug(`[${moduleName}] ftms server callback: ${message}`)
-  io.emit('log', {module: moduleName, level: 'debug', msg: `ftms server callback: ${message}`})
+function serverCallback (control, ...args) {
+  message(`ftms server callback: ${control}`)
+
   var success = false
 
-  switch (message) {
+  switch (control) {
     case 'reset': {
-      if (DEBUG) logger.info( `[${moduleName}] USB Reset triggered via BLE`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'USB Reset triggered via BLE'})
+      message('USB Reset triggered via BLE')
       io.emit('data', {control: '-', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
       tacx_usb.restart()
       success = true
@@ -211,42 +212,33 @@ function serverCallback (message, ...args) {
 
     case 'disconnect': {
       var power = tacx_usb.setPower(0)
-      if (DEBUG) logger.info( `[${moduleName}] disconnected`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'disconnected'})
+      message('disconnected')
       io.emit('data', {control: '-', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
       success = true
       break
     }
 
     case 'control': {// do nothing special
-      if (DEBUG) logger.info( `[${moduleName}] Bike under control via BLE`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'Bike under control via BLE'})
+      message('Bike under control via BLE')
       io.emit('data', {control: 'CONTROLLED', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
       success = true
       break
     }
 
     case 'power': {// ERG Mode - receive control point value via BLE from zwift or other app
-      if (DEBUG) logger.info( `[${moduleName}] Bike ERG Mode`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'Bike ERG Mode'})
-
       if (args.length > 0) {
 
         watt = Number(args[0]).toFixed(0)
         var power = tacx_usb.setPower(watt)
 
-        if (DEBUG) logger.info(`[server.js] - Bike in ERG Mode - set Power to: ${power}W vs ${watt}W`)
-        io.emit('log', {module: moduleName, level: 'info', msg: `Bike in ERG Mode - set Power to: ${watt}W`})
-        io.emit('data', {control: 'ERG MODE', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: watt, estimatepower: "-", estimatespeed: "-" })
+        message(`Bike in ERG Mode - set Power to: ${watt}W`)
+        io.emit('data', {control: 'ERG MODE', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: watt })
         success = true
       }
       break
     }
 
     case 'simulation': {// SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
-      if (DEBUG) logger.info( `[${moduleName}] Bike SIM Mode`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'Bike SIM Mode'})
-
       if (args.length > 3) {
 
         // crr and windspeed values sent from ZWIFT / FULLGAZ are crazy, specially FULLGAZ, when starting to decent, this drives up the wattage to above 600W
@@ -255,37 +247,28 @@ function serverCallback (message, ...args) {
         var crr = Number(args[2]).toFixed(4)       // coefficient of rolling resistance
         var cw = Number(args[3]).toFixed(2)        // coefficient of drag
 
-        var estimate = tacx_usb.setSimulation( windspeed, grade, crr, cw)
+        var power = tacx_usb.setSimulation( windspeed, grade, crr, cw)
 
-        if (DEBUG) logger.debug(`[${moduleName}] SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${estimate.power}W`)
-        io.emit('log', {module: moduleName, level: 'debug', msg: `SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${estimate.power}W`})
+        message(`SIM calculated power [wind: ${windspeed} - grade: ${grade} - crr: ${crr} - cw: ${cw}]:  ${power}W`)
 
-        if (DEBUG) logger.info(`[${moduleName}] Bike in SIM Mode - set Power to : ${estimate.power}W`)
-        io.emit('log', {module: moduleName, level: 'info', msg: `Bike in SIM Mode - set Power to : ${estimate.power}W`})
-        io.emit('data', {control: 'SIM MODE', windspeed: windspeed, grade: grade, crr: crr, cw: cw, setpower: watt, estimatepower: estimate.power, estimatespeed: estimate.speed })
+        message(`Bike in SIM Mode - set Power to : ${power}W`)
+        io.emit('data', {control: 'SIM MODE', windspeed: windspeed, grade: grade, crr: crr, cw: cw, setpower: "-" })
         success = true
       }
       break
     }
 
     case 'grade': {// SIM Mode - calculate power based on physics: https://www.gribble.org/cycling/power_v_speed.html
-      if (DEBUG) logger.info( `[${moduleName}] Bike SIM Mode`)
-      io.emit('log', {module: moduleName, level: 'info', msg: 'Bike SIM Mode'})
-
       if (args.length > 0) {
 
         var grade = Number(args[0]).toFixed(1)
 
-        io.emit('raw', '[server.js] - Bike SIM Mode - [grade]: ' + grade)
+        var power = tacx_usb.setSimulation( undefined, grade, undefined, undefined)
 
-        var estimate = tacx_usb.setSimulation( undefined, grade, undefined, undefined)
+        message(`SIM calculated power [grade: ${grade}]:  ${power}W`)
 
-        if (DEBUG) logger.debug(`[${moduleName}] SIM calculated power [grade: ${grade}]:  ${estimate.power}W`)
-        io.emit('log', {module: moduleName, level: 'debug', msg: `SIM calculated power [grade: ${grade}]:  ${estimate.power}W`})
-
-        if (DEBUG) logger.info(`[${moduleName}] Bike in SIM Mode - set Power to : ${estimate.power}W`)
-        io.emit('log', {module: moduleName, level: 'info', msg: `Bike in SIM Mode - set Power to : ${estimate.power}W`})
-        io.emit('data', {control: 'SIM MODE', windspeed: "-", grade: grade, crr: "-", cw: "-", setpower: "-", estimatepower: estimate.power, estimatespeed: estimate.speed })
+        message(`Bike in SIM Mode - set Power to : ${power}W`)
+        io.emit('data', {control: 'SIM MODE', windspeed: "-", grade: grade, crr: "-", cw: "-", setpower: "-" })
         success = true
       }
       break

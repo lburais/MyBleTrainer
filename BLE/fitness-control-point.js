@@ -7,13 +7,8 @@
 //
 // ========================================================================
 
-var logger = require('../lib/logger')
-const path = require('path')
-const moduleName = path.win32.basename(module.filename).replace('.js', '')
-
+var message = require('../lib/message')
 var Bleno = require('bleno')
-const config = require('config-yml') // Use config for yaml config files in Node.js projects
-var DEBUG = config.globals.debugBLE;
 
 // Spec
 // Control point op code
@@ -78,39 +73,39 @@ class FitnessControlPoint extends Bleno.Characteristic {
   onWriteRequest (data, offset, withoutResponse, callback) {
 
     var state = data.readUInt8(0)
-    logger.debug('[control point.js] - data ' +  data.toString('hex') + ' control: ' + this.underControl)
+    message('data ' +  data.toString('hex') + ' control: ' + this.underControl, 'debug')
     switch (state) {
       case ControlPointOpCode.requestControl:
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.requestControl.')
+        message('ControlPointOpCode.requestControl.')
         if (!this.underControl) {
           if (this.serverCallback('control')) {
-            if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - control succeed.')
+            message('control succeed.')
             this.underControl = true
             callback(this.buildResponse(state, ResultCode.success)) // ok
           } else {
-            if (DEBUG) logger.error('[fitness-control-point-characteristic.js] - control aborted.')
+            message('control aborted.', 'error')
             callback(this.buildResponse(state, ResultCode.operationFailed))
           }
         } else {
-          if (DEBUG) logger.warn('[fitness-control-point-characteristic.js] - allready controled.')
+          message('allready controled.', 'warn')
           callback(this.buildResponse(state, ResultCode.controlNotPermitted))
         }
         break
 
       case ControlPointOpCode.resetControl:
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.resetControl.')
+        message('ControlPointOpCode.resetControl.')
         if (this.underControl) {
           // reset the bike
-          if (this.serverCallback('[fitness-control-point-characteristic.js] - reset')) {
+          if (this.serverCallback('reset')) {
             this.underControl = false
-            if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - control reset controled.')
+            message('control reset controled.')
             callback(this.buildResponse(state, ResultCode.success)) // ok
           } else {
-            if (DEBUG) logger.error('[fitness-control-point-characteristic.js] - control reset failed.')
+            message('control reset failed.', 'error')
             callback(this.buildResponse(state, ResultCode.operationFailed))
           }
         } else {
-          if (DEBUG) logger.warn('[fitness-control-point-characteristic.js] - reset without control.')
+          message('reset without control.', 'warn')
           callback(this.buildResponse(state, ResultCode.controlNotPermitted))
         }
         break
@@ -118,60 +113,59 @@ class FitnessControlPoint extends Bleno.Characteristic {
       case ControlPointOpCode.setTargetPower: // this is ERG MODE
         global.globalmode = 'ERG' // this is overriding the toggles from webserver
         global.globalswitch = 'Power' // this is overriding the toggles from webserver
-        if (DEBUG) logger.debug('[fitness-control-point-characteristic.js] - ControlPointOpCode.setTargetPower.')
+        message('ControlPointOpCode.setTargetPower.', 'debug')
         if (this.underControl) {
           var watt = data.readUInt16LE(1)
-          if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - Target Power set to: ${watt}`)
+          message(`Target Power set to: ${watt}`)
           if (this.serverCallback('power', watt)) {
             callback(this.buildResponse(state, ResultCode.success)) // ok
             // } else {
-            // if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - setTarget failed');
+            // message('setTarget failed');
             // callback(this.buildResponse(state, ResultCode.operationFailed));
           }
         } else {
-          if (DEBUG) logger.warn('[fitness-control-point-characteristic.js] - setTargetPower without control.')
+          message('setTargetPower without control.', 'warn')
           callback(this.buildResponse(state, ResultCode.controlNotPermitted))
         }
         break
 
       case ControlPointOpCode.startOrResume:
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.startOrResume')
+        message('ControlPointOpCode.startOrResume')
         callback(this.buildResponse(state, ResultCode.success))
         break
 
       case ControlPointOpCode.stopOrPause:
-        if (DEBUG) logger.info('[fitness-control-point-characteristic.js] - ControlPointOpCode.stopOrPause')
+        message('ControlPointOpCode.stopOrPause')
         callback(this.buildResponse(state, ResultCode.success))
         break
 
       case ControlPointOpCode.setIndoorBikeSimulationParameters: // this is SIM MODE
-        if (DEBUG) logger.debug('[fitness-control-point-characteristic.js] - ControlPointOpCode.setIndoorBikeSimulationParameters')
+        message('ControlPointOpCode.setIndoorBikeSimulationParameters', 'debug')
         var windspeed = data.readInt16LE(1) * 0.001
         var grade = data.readInt16LE(3) * 0.01
         var crr = data.readUInt8(5) * 0.0001
         var cw = data.readUInt8(6) * 0.01
-        if (DEBUG)
-          logger.info(`[fitness-control-point-characteristic.js] - setIndoorBikeSimulationParameters - windspeed: ${windspeed}, grade: ${grade}, crr: ${crr} and cw: ${cw}`)
+        message(`setIndoorBikeSimulationParameters - windspeed: ${windspeed}, grade: ${grade}, crr: ${crr} and cw: ${cw}`)
         if (this.serverCallback('simulation', windspeed, grade, crr, cw)) {
           callback(this.buildResponse(state, ResultCode.success))
         } else {
-          if (DEBUG) logger.error('[fitness-control-point-characteristic.js] - simulation failed')
+          message('simulation failed', 'error')
           callback(this.buildResponse(state, ResultCode.operationFailed))
         }
         break
       case ControlPointOpCode.setTargetInclincation:
         var grade = data.readInt16LE(1)  * 0.1
-        if (DEBUG) logger.info(`[fitness-control-point-characteristic.js] - ControlPointOpCode.setTargetInclincation - grade: ${grade}`)
+        message(`ControlPointOpCode.setTargetInclincation - grade: ${grade}`)
         if (this.serverCallback('grade', grade)) {
           callback(this.buildResponse(state, ResultCode.success))
         } else {
-          if (DEBUG) logger.error('[fitness-control-point-characteristic.js] - set inclination failed')
+          message('set inclination failed', 'error')
           callback(this.buildResponse(state, ResultCode.operationFailed))
         }
         //callback(this.buildResponse(state, ResultCode.opCodeNotSupported))
         break
       default: // anything else : not yet implemented
-        if (DEBUG) logger.warn('[fitness-control-point-characteristic.js] - State is not supported ' + state + '.')
+        message('State is not supported ' + state + '.', 'warn')
         callback(this.buildResponse(state, ResultCode.opCodeNotSupported))
         break
     }
