@@ -83,7 +83,7 @@ class trainerANT extends EventEmitter {
     this.heartbeat = function() {
       var millis = Date.now() - self.timeANT
       self.timeANT = Date.now()
-      message(`heartbeat: ${millis}ms`)
+      message(`heartbeat: ${millis}ms`, 'debug')
       if (self.active == false) {
         if (self.reset == false) {
           self.emit( 'data', { last_ant: '-', speed: 0, hr: 0, rpm: 0 } )

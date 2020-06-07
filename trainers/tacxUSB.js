@@ -301,7 +301,7 @@ function tacxUSB() {
   this.read = function() {
     var millis = Date.now() - self.timeUSB
     self.timeUSB = Date.now()
-    message(`read: ${millis}ms`)
+    message(`read: ${millis}ms`, 'debug')
     if (self.deviceUSB) self.deviceUSB.read(64, self.readCallback)
   }
 
