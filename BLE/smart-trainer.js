@@ -5,14 +5,26 @@
 //
 // ========================================================================
 
-process.env.BLENO_HCI_DEVICE_ID="0" //need internal BLE >4.0
-//process.env.BLENO_ADVERTISING_INTERVAL=200
+process.env.BLENO_HCI_DEVICE_ID="0"
 const bleno = require('bleno')
 var message = require('../lib/message')
 
 const EventEmitter = require('events')
 const FitnessMachineService = require('./fitness-machine-service')
 const DeviceInformationService = require('./device-information-service')
+
+var DeviceInformation = {
+  name: 'Smart Trainer Bridge',
+  systemId: '1',
+  modelNumber: 'NA',
+  serialNumber: 'NA',
+  firmwareRevision: 'Dietpi',
+  hardwareRevision: 'Rpi 3 model B+',
+  softwareRevision: 'node 14.x',
+  manufacturerName: 'Laurent Burais',
+  certification: [0],
+  pnpId: [0]
+}
 
 class TrainerBLE extends EventEmitter {
   constructor (options, serverCallback) {
@@ -22,7 +34,7 @@ class TrainerBLE extends EventEmitter {
     process.env['BLENO_DEVICE_NAME'] = this.name
 
     this.ftms = new FitnessMachineService(serverCallback)
-    this.dis = new DeviceInformationService(options)
+    this.dis = new DeviceInformationService(DeviceInformation)
 
     let self = this;
     message(`BLE server starting`)

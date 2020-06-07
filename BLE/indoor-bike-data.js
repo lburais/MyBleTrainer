@@ -27,7 +27,7 @@ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-    message('client subscribed')
+    message(`client subscribed ${maxValueSize}`)
     this._updateValueCallback = updateValueCallback
     return this.RESULT_SUCCESS
   }
@@ -39,54 +39,57 @@ class IndoorBikeDataCharacteristic extends Bleno.Characteristic {
   }
 
   notify (event) {
-    var line = "notify"
-    if (!('power' in event) && !('hr' in event)) {
-      // ignore events with no power and no hr data
+    var line = 'notify'
+    if (!('power' in event) && !('speed' in event) && !('rpm' in event) && !('hr' in event)) {
+      // ignore events with no data
       return this.RESULT_SUCCESS
     }
-    var buffer = new Buffer.alloc(10) // changed buffer size from 10 to 8 because of deleting hr
-    buffer.writeUInt8(0x44, 0) // 0100 0100 - rpm + power (speed is always on)
-    buffer.writeUInt8(0x02, 1) // deleted hr, so all bits are 0
+    var buffer = new Buffer.alloc(10)
+    var flags = 0x0005 // 0 = not present except b0 instantaneous speed and b2 instantaneous cadence when 0 = present
+    var flags = 0x0000 // 0 = not present except b0 instantaneous speed and b2 instantaneous cadence when 0 = present
 
     var index = 2
 
-    var speed = 0
-    if ('speed' in event) {
-      var speed = event.speed
-      line = line + ` speed: ${speed}km/h`
-    }
-    buffer.writeUInt16LE(speed, index) // index starts with 2
+    if ('speed' in event) var speed = event.speed
+    else speed = 0
+    line = line + ` speed: ${speed}km/h`
+    buffer.writeUInt16LE(speed * 100, index) // C1: instantaneous speed - Kilometer per hour with a resolution of 0.01
+    flags &= 0xFFFE // clear b0
     index += 2
 
-    var rpm = 0
     if ('rpm' in event) {
-      rpm = event.rpm
+      var rpm = event.rpm
       line = line + ` rpm: ${rpm}`
+      buffer.writeUInt16LE(rpm * 2, index) // C3: instantaneous cadence - 1/minute with a resolution of 0.5
+      flags &= 0xFFFB // clear b2
+      flags |= 0x0004 // set b2
+      index += 2
     }
-    buffer.writeUInt16LE(rpm * 2, index) // index is now 4
+
+    if ('power' in event) var power = event.power
+    else power = 0
+    line = line + ` power: ${power}W`
+    buffer.writeInt16LE(power, index) // C7: instantaneous power - Watts with a resolution of 1
+    flags |= 0x0040 // set b6
     index += 2
 
-    var power = 0
-    if ('power' in event) {
-      power = event.power
-      line = line + ` power: ${power}W`
-    }
-    buffer.writeInt16LE(power, index) // index is now 6
-    index += 2 // this might have caused the mixup with hr value in power, if one value is missing, then its shifted to the next 2 bytes
-
-    var hr = 0
     if ('hr' in event) {
-      hr = event.hr
+      var hr = event.hr
       line = line + ` hr: ${hr}bpm`
+      buffer.writeUInt16LE(hr, index) // C10: heart rate - Beats per minute with a resolution of 1
+      flags |= 0x0200 // set b9
+      index += 2
     }
-    buffer.writeUInt16LE(hr, index)
-    index += 2
+
+    buffer.writeUInt16LE(flags, 0)
+
+    line = line + ` [${buffer.toString('hex')}]`
 
     if (this._updateValueCallback) {
       message(line)
       this._updateValueCallback(buffer)
     } else {
-    message('nobody is listening', 'warn')
+      message(`nobody is listening [${buffer.toString('hex')}]`, 'warn')
     }
     return this.RESULT_SUCCESS
   }

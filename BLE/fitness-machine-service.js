@@ -43,7 +43,7 @@ class FitnessMachineService extends Bleno.PrimaryService {
         controlPoint,
         fitnessMachineStatus,
         new StaticReadCharacteristic('2AD8', 'SupportedPowerRange', [
-          // section 4.3 of FTMS protocol
+          // section 4.14 of FTMS protocol
           // 25 - 800 with 5 watts step
           // 0x0019 0x0320 0x0005
           0x19,

@@ -47,113 +47,49 @@ server.listen(process.env.PORT || config.globals.server, function () {
 })
 
 // /////////////////////////////////////////////////////////////////////////
-// Ant Trainer
-// /////////////////////////////////////////////////////////////////////////
-
-/*
-var trainerANT = require('./trainers/trainerANT')
-var trainer_ant = new trainerANT()
-
-trainer_ant.on('notifications_true', () => {
-smart_trainer_init ();
-});
-
-trainer_ant.on('notified', data => {
-// recalculate power if BLE controlled? P = F * v
-
-if ('rpm' in data) io.emit('rpm', data.rpm.toFixed(0))
-if ('speed' in data) {
-speedms = Number(data.speed/3.6).toFixed(4)
-//servo_gpio.getSpeed(data.speed, watt)
-
-io.emit('speed', data.speed.toFixed(1))
-}
-if ('power' in data && controlled == true && brforce > 0) {
-var tp=brforce * data.speed/3.6
-data.power = Math.round(tp)
-io.emit('power', data.power)
-} else {
-io.emit('power', data.power)
-}
-
-if ('hr' in data) io.emit('hr', data.hr)
-
-if (!measuring) {
-smart_trainer.notifyFTMS(data)
-}
-else {
-measuring = smart_trainer.measure(data)
-io.emit('key', '[server.js] - measured?')
-if (!measuring) {
-io.emit('measured')
-io.emit('key', '[server.js] - yes!')
-}
-}
-})
-*/
-
-// /////////////////////////////////////////////////////////////////////////
-// Tacx USB
-// /////////////////////////////////////////////////////////////////////////
-
-var tacxUSB = require('./trainers/tacxUSB')
-var tacx_usb = new tacxUSB()
-
-tacx_obs = tacx_usb.run()
-
-tacx_obs.on('log', data => {
-  message(data.msg, data.level)
-})
-
-tacx_obs.on('error', string => {
-  message(string, 'error')
-})
-
-tacx_obs.on('usb', string => {
-  message(string)
-  io.emit('usb', string)
-})
-
-tacx_obs.on('setup', data => {
-  message('setup: ' + JSON.stringify(data))
-  io.emit('data', string)
-})
-
-tacx_obs.on('data', data => {
-  message(JSON.stringify(data))
-  io.emit('data', data)
-  smart_trainer.notifyFTMS(data)
-})
-
-// /////////////////////////////////////////////////////////////////////////
-// Web server callback, listen for actions taken at the server GUI,
-// not from Ant, Daum or BLE
+// Web server callback, listen for actions taken at the Web page
 // /////////////////////////////////////////////////////////////////////////
 
 io.on('connection', socket => {
 
   message(`connected to socketio`)
+  tacx_usb.refreshWebPage()
 
-  socket.on('reset', function (data) {
-    message('VirtualTrainer Server started')
-  })
+  socket.on('action', function (data) {
+    switch(data) {
+      case 'reset': {
+        message('VirtualTrainer Server started')
+        tacx_usb.reset()
+        break
+      }
 
-  socket.on('restart', function (data) {
-    message('restarted')
-  })
+      case 'refresh': {
+        message('refresh')
+        tacx_usb.refreshWebPage()
+        break
+      }
 
-  socket.on('reco', function (data) {
-    message('reconnect')
-    smart_trainer_init ()
-  })
+      case 'restart': {
+        message('restarted')
+        tacx_usb.restart()
+        break
+      }
 
-  socket.on('stop', function (data) {
-    message('stopped')
+      case 'start': {
+        message('start')
+        tacx_usb.start()
+        break
+      }
+
+      case 'stop': {
+        message('stopped')
+        tacx_usb.stop()
+        break
+      }
+    }
   })
 
   socket.on('log', function (data) {
-    // forward to client
-    //console.info(JSON.stringify(data))
     io.emit('log', data.message)
   })
 
@@ -178,22 +114,81 @@ function smart_trainer_init () {
 
   smart_trainer.on('disconnect', string => {
     message(`disconnected: ${string}`)
-    io.emit('control', 'disconnected')
   })
 
   smart_trainer.on('error', string => {
     message(`error: ${string}`, 'error')
-    io.emit('error', '[server.js] - ' + string)
   })
 
   smart_trainer.on('accept', string => {
     message(`accept: ${string}`)
-    io.emit('accept', '[server.js] - ' + string)
   })
 }
 
 // /////////////////////////////////////////////////////////////////////////
+// Ant Trainer
+// /////////////////////////////////////////////////////////////////////////
+
+var sensorANT = require('./trainers/sensorANT')
+var sensor_ant = new sensorANT()
+var sensor_ant_data = {}
+
+sensor_ant.on('log', data => {
+  message(data.msg, data.level)
+})
+
+sensor_ant.on('data', data => {
+  message(`From ANT: ${JSON.stringify(data)}`)
+  io.emit('ant', data)
+  sensor_ant_data = data
+})
+
+
+// /////////////////////////////////////////////////////////////////////////
+// Tacx USB
+// /////////////////////////////////////////////////////////////////////////
+
+var tacxUSB = require('./trainers/tacxUSB')
+var tacx_usb = new tacxUSB()
+
+tacx_obs = tacx_usb.run()
+
+tacx_obs.on('log', data => {
+  message(data.msg, data.level)
+})
+
+tacx_obs.on('error', string => {
+  message(string, 'error')
+})
+
+tacx_obs.on('param', data => {
+  // do not forward to FTMS
+  message(`Parameters: ${JSON.stringify(data)}`)
+  io.emit('tacx', data)
+})
+
+tacx_obs.on('data', data => {
+  message(`From USB: ${JSON.stringify(data)}`)
+  io.emit('tacx', data)
+  
+  var out_data = {}
+  if ('power' in data) out_data.power = data.power
+
+  if (('speed' in data) && config.tacxUSB.speed) out_data.speed = data.speed
+  else if ('speed' in sensor_ant_data) out_data.speed = sensor_ant_data.speed
+
+  if (('rpm' in data) && config.tacxUSB.rpm) out_data.rpm = data.rpm
+  else if ('rpm' in sensor_ant_data) out_data.rpm = sensor_ant_data.rpm
+
+  if (('hr' in data) && config.tacxUSB.hr) out_data.hr = data.hr
+  else if ('hr' in sensor_ant_data) out_data.hr = sensor_ant_data.hr
+
+  smart_trainer.notifyFTMS(out_data)
+})
+
+// /////////////////////////////////////////////////////////////////////////
 // BLE callback section
+// something happened with the application
 // /////////////////////////////////////////////////////////////////////////
 
 function serverCallback (control, ...args) {
@@ -204,15 +199,14 @@ function serverCallback (control, ...args) {
   switch (control) {
     case 'reset': {
       message('USB Reset triggered via BLE')
-      io.emit('data', {control: '-', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
-      tacx_usb.restart()
+      tacx_usb.reset()
       success = true
       break
     }
 
     case 'disconnect': {
-      var power = tacx_usb.setPower(0)
       message('disconnected')
+      tacx_usb.reset()
       io.emit('data', {control: '-', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
       success = true
       break
@@ -220,7 +214,6 @@ function serverCallback (control, ...args) {
 
     case 'control': {// do nothing special
       message('Bike under control via BLE')
-      io.emit('data', {control: 'CONTROLLED', windspeed: "-", grade: "-", crr: "-", cw: "-", setpower: "-", estimatepower: "-", estimatespeed: "-" })
       success = true
       break
     }

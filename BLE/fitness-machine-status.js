@@ -49,7 +49,7 @@ class FitnessMachineStatusCharacteristic extends Bleno.Characteristic {
   }
 
   onSubscribe (maxValueSize, updateValueCallback) {
-    message('client subscribed')
+    message(`client subscribed ${maxValueSize}`)
     this._updateValueCallback = updateValueCallback
     return this.RESULT_SUCCESS
   }

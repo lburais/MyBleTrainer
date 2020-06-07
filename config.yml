@@ -1,10 +1,17 @@
 globals:
     debug: true
-    debugUSB: true
-    debugANT: true
-    debugBLE: true
-    debugWWW: true
     server: 3000
+
+debug:
+    debug: true
+    easyUSB: true
+    tacxUSB: true
+    trainerANT: true
+    fitness-control-point: true
+    fitness-machine-status: true
+    indoor-bike-data: true
+    smart-trainer: true
+    server: true
 
 physics:
     debug: true
@@ -30,5 +37,10 @@ tacxUSB:
     speed_min: 10
     power_step: 5
     power_max: 800
-    rpm: true
-    hr: true
+    rpm: false
+    hr: false
+    speed: false
+
+sensorANT:
+    wheel: 2.199
+    period: 1000

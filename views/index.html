@@ -58,18 +58,16 @@ var socket = io(); // changed in server.js to get the IP and dont put it in stat
 ///////////////////////////////////////////////////////////////////////////
 
 function addAlert_msg(message) {
-  var display = false
+  var display = true
   var check = document.getElementById("messages_" + message.module)
   if (check != undefined) display = check.checked
   check = document.getElementById("messages_" + message.level)
   if (check != undefined) display &= check.checked
 
   var alert = 'alert-info'
-  if (message.level == 'error') alert = 'alert-danger'
-  if (message.level == 'warn') alert = 'alert-alert'
-  if (message.level == 'debug') alert = 'alert-secondary'
-  if (message.level == 'raw') alert = 'alert-primary'
-  if (message.level == 'key') alert = 'alert-success'
+  if (message.level == 'error') alert = 'alert-danger'        // red
+  if (message.level == 'warn') alert = 'alert-warning'        // yellow
+  if (message.level == 'debug') alert = 'alert-light'         // light
 
   var line = new Date().toLocaleTimeString() + ' [' + message.module + '] - ' + message.msg
 
@@ -80,38 +78,52 @@ function addAlert_msg(message) {
       ' text-left text-monospace text-nowrap text-truncate small"> <b>' +
       line +
       '</b></div>')
+    }
   }
-}
-socket.on('log', function (data) {
-  addAlert_msg(data);
-});
+  socket.on('log', function (data) {
+    addAlert_msg(data);
+  });
 
 
   ///////////////////////////////////////////////////////////////////////////
   // Data
   ///////////////////////////////////////////////////////////////////////////
 
-  socket.on('data', function (data) {
+  function displayData(source, data) {
+    var source = (source === 'ant') ? 'a' : '';
     for (let [key, value] of Object.entries(data)) {
       try {
-        switch($('#'+key).attr("role")) {
-          case 'progressbar':
-          var width = value / $('#'+key).attr("aria-valuemax") * 100
-          $('#'+key).attr("aria-valuenow", value);
-          $('#'+key).width(width + "%")
-          $('#'+key).text(value + $('#'+key).attr("title"));
-          break
-          case 'slider':
-          $('#'+key).attr("value", value);
-          break
-          case 'badge':
-          $('#'+key).text(value);
-          break
-          default:
-          break
+        switch($('#'+source+key).attr("role")) {
+          case 'progressbar': {
+            var width = value / $('#'+source+key).attr("aria-valuemax") * 100
+            $('#'+source+key).attr("aria-valuenow", value);
+            $('#'+source+key).width(width + "%")
+            $('#'+source+key).text(value + $('#'+source+key).attr("title"));
+            break
+          }
+          case 'slider': {
+            $('#'+source+key).attr("value", value);
+            break
+          }
+          case 'badge': {
+            $('#'+source+key).text(value);
+            break
+          }
+          default: {
+            break
+          }
         }
       } catch {}
     }
+  }
+  socket.on('tacx', function (data) {
+    displayData('tacx',data)
+  })
+  socket.on('data', function (data) {
+    displayData('data',data)
+  })
+  socket.on('ant', function (data) {
+    displayData('ant',data)
   })
 
   ///////////////////////////////////////////////////////////////////////////
@@ -120,23 +132,9 @@ socket.on('log', function (data) {
 
   $(function () {
     var socket = io();
-    $('#restart').click(function(){
-      socket.emit('restart', 'Salut serveur, ça va ?');
-      return false;
-    });
-
-    $('#reconnect').click(function(){
-      socket.emit('reco', 'reco');
-      return false;
-    });
-
-    $('#stop').click(function(){
-      socket.emit('stop', 'stop');
-      return false;
-    });
-
-    $('#start').click(function(){
-      socket.emit('start', 'start');
+    $('a.dropdown-item.action').click(function() {
+      var id = $(this).attr('id');
+      socket.emit('action', id);
       return false;
     });
 
@@ -157,275 +155,367 @@ socket.on('log', function (data) {
       <div class="container-fluid">
 
         <!--Top Bar-->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-          <a class="navbar-brand font-small" href="#">
-            <img src="/docs/4.4/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt="">
-            <b>Virtual Smart Trainer</b></a>
-          </nav>
-          <!--/Top Bar-->
-
-          <!--Main-->
-          <div class="row">
-
-            <!--Column 1-->
-            <div class="col-md-3">
-              <!--Display-->
-              <div class="card text-center">
-                <div class="card-header">
-                  <h5 class="title"><b>Tacx T1932</b></h5>
+        <nav class="navbar navbar-expand-lg navbar-light bg-primary sticky-top">
+          <img src="./t1932.img" width="30" height="30" class="d-inline-block align-top" alt=""></img>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+              <li class="nav-item dropdown active">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <b> Virtual Smart Trainer</b>
+                </a>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuAction">
+                  <a class="dropdown-item action" href="#" id="refresh">Refresh</a>
+                  <a class="dropdown-item action" href="#" id="restart">Restart</a>
+                  <a class="dropdown-item action" href="#" id="stop">Stop</a>
+                  <a class="dropdown-item action" href="#" id="reset">Reset</a>
                 </div>
+              </li>
+            </ul>
+          </div>
+        </a>
+      </nav>
+      <!--/Top Bar-->
 
-                <div class="card-body">
-                  <h5 class="title float-left m-2">Resistance</h5>
-                  <h4><span id="resistance" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                  <div class="slidecontainer">
-                    <input type="range" min="0" max="13" value="0" class="slider" id="force_index" role="slider" style="width: 100%" list="resistancelist" disabled>
-                  </div>
-                  <div class="container">
-                    <div class="row">
-                      <div class="col-4">
-                        <h5 class="title">Power</h5>
-                      </div>
-                      <div class="col-8">
-                        <div class="progress">
-                          <div id="power" title="W" class="progress-bar bg-success" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
-                        </div>
-                      </div>
-                      <div class="col-4">
-                        <h5 class="title">Speed</h5>
-                      </div>
-                      <div class="col-8">
-                        <div class="progress">
-                          <div id="speed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
-                        </div>
-                      </div>
-                      <div class="col-4">
-                        <h5 class="title">Load</h5>
-                      </div>
-                      <div class="col-8">
-                        <div class="progress">
-                          <div id="load" title="" class="progress-bar bg-alert" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4677"></div>
-                        </div>
-                      </div>
-                      <div class="col-4">
-                        <h5 class="title">Cadence</h5>
-                      </div>
-                      <div class="col-8">
-                        <div class="progress">
-                          <div id="rpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
-                        </div>
-                      </div>
-                      <div class="col-4">
-                        <h5 class="title">HR</h5>
-                      </div>
-                      <div class="col-8">
-                        <div class="progress">
-                          <div id="hr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 10%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!--/Display-->
+      <!--Cards-->
+      <div class="card-columns">
 
-              <!--Simulation-->
-              <div class="card text-center">
-                <div class="card-header">
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="tacxUSB_simulation" value="tacxUSB_simulation">
-                    <label class="form-check-label" for="tacxUSB_simulation"><h5 class="title"><b>Simulation</b></h5></label>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <h5 class="title float-left m-2">Power [W]</h5>
-                  <h4><span id="power_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
-                  <div class="slidecontainer">
-                    <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
-                  </div>
-
-                  <h5 class="title float-left m-2">Speed [km/h]</h5>
-                  <h4><span id="speed_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
-                  <div class="slidecontainer">
-                    <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
-                  </div>
-
-                                    <h5 class="title float-left m-2">RPM</h5>
-                                    <h4><span id="rpm_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
-                                    <div class="slidecontainer">
-                                      <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
-                                    </div>
-
-                                                      <h5 class="title float-left m-2">HR</h5>
-                                                      <h4><span id="hr_sim_badge" class="badge badge-primary float-right m-2">-</span></h4>
-                                                      <div class="slidecontainer">
-                                                        <input type="range" min="0" max="220" value="0" class="slider" id="hr_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
-                                                      </div>
-                </div>
-              </div>
-              <!--/Simulation-->
+        <!--Tacx T1932-->
+        <div class="card text-center">
+          <div class="card-header">
+            <div class="row">
+              <div class="col-9"><h5 class="title"><b>Tacx T1932</b></h5></div>
+              <div class="col-3"><h4><span id="last_usb" role="badge" class="badge badge-primary">?</span></h4></div>
             </div>
-            <!--/Column 1-->
+          </div>
 
-            <!--Column 2-->
-            <div class="col-md-3">
-
-              <!--Application-->
-              <div class="card text-center">
-                <div class="card-header">
-                  <h5 class="title float-left m-2"><b>Application</b></h5>
-                  <h4><span id="control" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                </div>
-                <div class="card-body">
-                  <h5 class="title">Set Simulation</h5>
-                  <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Grade [%]</h6>
-                      <h4><span id="grade" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Cw [kg/m]</h6>
-                      <h4><span id="cw" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Windspeed [m/s]</h6>
-                      <h4><span id="windspeed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Crr []</h6>
-                      <h4><span id="crr" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                  </ul>
-                  <h5 class="title">Set Power</h5>
-                  <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Power [W]</h6>
-                      <h4><span id="setpower" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                  </ul>
-                  <h5 class="title">Physics</h5>
-                  <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Power calculation [W]</h6>
-                      <h4><span id="last_power" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Speed [km/h]</h6>
-                      <h4><span id="last_speed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Rider + Bike Mass [kg]</h6>
-                      <div class="slidecontainer">
-                        <input type="range" min="0" max="120" value="0" role="slider" class="slider" id="mass" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)">
-                      </div>
-                      <h4><span id="mass_badge" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Grade [%]</h6>
-                      <h4><span id="last_grade" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Cw [kg/m]</h6>
-                      <h4><span id="last_cw" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Windspeed [m/s]</h6>
-                      <h4><span id="last_windspeed" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <h6 class="title">Crr []</h6>
-                      <h4><span id="last_crr" role="badge" class="badge badge-primary float-right m-2">-</span></h4>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <!--/Application-->
+          <div class="card-body">
+            <h5 class="title float-left m-2">Resistance</h5>
+            <h4><span id="resistance" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+            <div class="slidecontainer">
+              <input type="range" min="0" max="13" value="0" class="slider" id="force_index" role="slider" style="width: 100%" list="resistancelist" disabled>
             </div>
-            <!--/Column 2-->
-
-            <!--Column 3-->
-            <div class="col-md-6">
-              <div class="card card-block d-flex text-center h-100">
-                <div class="card-header">
-                  <h5 class="title"><b>Logs</b></h5>
+            <div class="container">
+              <div class="row">
+                <div class="col-4">
+                  <h5 class="title">Power</h5>
                 </div>
-                <div class="card-body d-flex">
-                  <div class="container">
-                    <div class="row">
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_server" value="messages_server" checked>
-                        <label class="form-check-label" for="messages_server">Bridge</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_tacxUSB" value="messages_tacxUSB" checked>
-                        <label class="form-check-label" for="messages_tacxUSB">Tacx USB</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_smart-trainer" value="messages_smart-trainer" checked>
-                        <label class="form-check-label" for="messages_smart-trainer">Smart Trainer</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_ANT" value="messages_ANT" checked>
-                        <label class="form-check-label" for="messages_ANT">ANT trainer</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_BLE" value="messages_BLE" checked>
-                        <label class="form-check-label" for="messages_BLE">BLE server</label>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_debug" value="messages_debug" checked>
-                        <label class="form-check-label" for="messages_debug">Debug</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_info" value="messages_info" checked>
-                        <label class="form-check-label" for="messages_info">Info</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_warn" value="messages_warn" checked disabled>
-                        <label class="form-check-label" for="messages_warn">Warning</label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="messages_error" value="messages_error" checked disabled>
-                        <label class="form-check-label" for="messages_error">Error</label>
-                      </div>
-                    </div>
-                    <div class="row scroll">
-                      <div class="alert" id="alerts"></div>
-                    </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="power" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <h5 class="title">Speed</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="speed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <h5 class="title">Load</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="load" title="" class="progress-bar bg-alert" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4677"></div>
+                  </div>
+                </div>
+<!--
+                <div class="col-4">
+                  <h5 class="title">Cadence</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="rpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <h5 class="title">HR</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="hr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                  </div>
+                </div>
+-->
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--/Tacx T1932-->
+
+        <!--ANT-->
+        <div class="card text-center">
+          <div class="card-header">
+            <div class="row">
+              <div class="col-9"><h5 class="title"><b>ANT sensors</b></h5></div>
+              <div class="col-3"><h4><span id="alast_ant" role="badge" class="badge badge-primary">?</span></h4></div>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="container">
+              <div class="row">
+<!--
+                <div class="col-4">
+                  <h5 class="title">Power</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="apower" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                  </div>
+                </div>
+-->
+                <div class="col-4">
+                  <h5 class="title">Speed</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="aspeed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <h5 class="title">Cadence</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="arpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <h5 class="title">HR</h5>
+                </div>
+                <div class="col-8">
+                  <div class="progress">
+                    <div id="ahr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
                   </div>
                 </div>
               </div>
-              <!--/Column 3-->
             </div>
-            <!--/Main-->
+          </div>
+        </div>
+        <!--/ANT-->
 
-            <!--Footer-->
-            <footer class="page-footer font-small primary">
-              <div class="footer-copyright text-center py-3">&copy; Copyright Laurent Burais</div>
-            </footer>
-            <!--/Footer-->
+        <!--Application-->
+        <div class="card text-center">
+          <div class="card-header">
+            <div class="row">
+              <div class="col-9"><h5 class="title"><b>Application</b></h5></div>
+              <div class="col-3"><h4><span id="control" role="badge" class="badge badge-primary">?</span></h4></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h5 class="title">Set Simulation</h5>
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Grade [%]</h6>
+                <h4><span id="grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Cw [kg/m]</h6>
+                <h4><span id="cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Windspeed [m/s]</h6>
+                <h4><span id="windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Crr []</h6>
+                <h4><span id="crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+            </ul>
+            <h5 class="title">Set Power</h5>
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Power [W]</h6>
+                <h4><span id="setpower" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <!--/Application-->
+
+        <!--Physics-->
+        <div class="card text-center">
+          <div class="card-header">
+            <div class="row">
+              <div class="col-12"><h5 class="title"><b>Physics</b></h5></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Power calculation [W]</h6>
+                <h4><span id="last_power" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Speed [km/h]</h6>
+                <h4><span id="last_speed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Rider + Bike Mass [kg]</h6>
+                <h4><span id="last_mass" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Grade [%]</h6>
+                <h4><span id="last_grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Cw [kg/m]</h6>
+                <h4><span id="last_cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Windspeed [m/s]</h6>
+                <h4><span id="last_windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <h6 class="title">Crr []</h6>
+                <h4><span id="last_crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <!--/Physics-->
+
+        <!--Simulation-->
+<!--
+        <div class="card text-center">
+          <div class="card-header">
+            <div class="form-check form-check-inline">
+              <div class="row">
+                <div class="col-9"><h5 class="title"><b>Simulation</b></h5></div>
+                <div class="col-3"><input class="form-check-input" type="checkbox" id="tacxUSB_simulation" value="tacxUSB_simulation"></input></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h5 class="title float-left m-2">Power [W]</h5>
+            <h4><span id="power_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+            <div class="slidecontainer">
+              <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+            </div>
+
+            <h5 class="title float-left m-2">Speed [km/h]</h5>
+            <h4><span id="speed_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+            <div class="slidecontainer">
+              <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+            </div>
+
+            <h5 class="title float-left m-2">RPM</h5>
+            <h4><span id="rpm_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+            <div class="slidecontainer">
+              <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+            </div>
+
+            <h5 class="title float-left m-2">HR</h5>
+            <h4><span id="hr_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+            <div class="slidecontainer">
+              <input type="range" min="0" max="220" value="0" class="slider" id="hr_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+            </div>
+          </div>
+        </div>
+-->
+        <!--/Simulation-->
+      </div>
+      <!--/cards-->
+
+      <!--Logs-->
+      <div class="card text-center h-100 mb-6">
+        <div class="card-header">
+          <h5 class="title"><b>Logs</b></h5>
+        </div>
+        <div class="card-body">
+          <div class="container">
+            <div class="row">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_server" value="messages_server" checked>
+                <label class="form-check-label" for="messages_server">Server</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_tacxUSB" value="messages_tacxUSB" checked>
+                <label class="form-check-label" for="messages_tacxUSB">Tacx</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_smart-trainer" value="messages_smart-trainer" checked>
+                <label class="form-check-label" for="messages_smart-trainer">Smart Trainer</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_indoor-bike-data" value="messages_indoor-bike-data" checked>
+                <label class="form-check-label" for="messages_indoor-bike-data">Indoor Bike Data</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_fitness-control-point" value="messages_fitness-control-point" checked>
+                <label class="form-check-label" for="messages_fitness-control-point">Fitness Control Point</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_fitness-machine-status" value="messages_fitness-machine-status" checked>
+                <label class="form-check-label" for="messages_fitness-machine-status">Fitness Machine Status</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_sensorANT" value="messages_sensorANT" checked>
+                <label class="form-check-label" for="messages_sensorANT">ANT sensors</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_sensorBLE" value="messages_sensorBLE" checked>
+                <label class="form-check-label" for="messages_sensorBLE">BLE sensors</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_easyUSB" value="messages_easyUSB" unchecked>
+                <label class="form-check-label" for="messages_easyUSB">USB</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_debug" value="messages_debug" checked>
+                <label class="form-check-label" for="messages_debug">Debug</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_info" value="messages_info" checked>
+                <label class="form-check-label" for="messages_info">Info</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_warn" value="messages_warn" checked disabled>
+                <label class="form-check-label" for="messages_warn">Warning</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="messages_error" value="messages_error" checked disabled>
+                <label class="form-check-label" for="messages_error">Error</label>
+              </div>
+            </div>
+            <div class="row scroll">
+              <div class="alert" id="alerts"></div>
+            </div>
           </div>
         </div>
       </div>
-      <!--lists-->
-      <datalist id="resistancelist">
-        <option value="0">
-          <option value="1">
-            <option value="2">
-              <option value="3">
-                <option value="4">
-                  <option value="5">
-                    <option value="6">
-                      <option value="7">
-                        <option value="8">
-                          <option value="9">
-                            <option value="10">
-                              <option value="11">
-                                <option value="12">
-                                  <option value="13">
-                                  </datalist>
+      <!--/Logs-->
 
-                                </body>
-                                </html>
+      <!--Footer-->
+      <footer class="page-footer font-small primary">
+        <div class="footer-copyright text-center py-3">&copy; Copyright Laurent Burais</div>
+      </footer>
+      <!--/Footer-->
+    </div>
+  </div>
+</div>
+<!--lists-->
+<datalist id="resistancelist">
+  <option value="0">
+    <option value="1">
+      <option value="2">
+        <option value="3">
+          <option value="4">
+            <option value="5">
+              <option value="6">
+                <option value="7">
+                  <option value="8">
+                    <option value="9">
+                      <option value="10">
+                        <option value="11">
+                          <option value="12">
+                            <option value="13">
+                            </datalist>
+
+                          </body>
+                          </html>
