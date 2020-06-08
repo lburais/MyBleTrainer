@@ -34,6 +34,7 @@ var smart_trainer; // wait for sensor befor start advertising
 app.use('/public/css', express.static(path.join(__dirname, 'public/css')))
 app.use('/public', express.static(path.join(__dirname, 'public')))
 app.use('/lib', express.static(path.join(__dirname, 'lib')))
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')))
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'html')
 app.engine('html', require('ejs').renderFile)
@@ -170,7 +171,7 @@ tacx_obs.on('param', data => {
 tacx_obs.on('data', data => {
   message(`From USB: ${JSON.stringify(data)}`)
   io.emit('tacx', data)
-  
+
   var out_data = {}
   if ('power' in data) out_data.power = data.power
 

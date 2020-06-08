@@ -3,51 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <!--
-  <link href="./public/css/bootstrap.min.css" rel="stylesheet">
-  <link href="./public/css/bootstrap-toggle.min.css" rel="stylesheet">
--->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" >
-<link href="./public/css/style.css" rel="stylesheet">
 
-<!--
-<script src="./lib/socket.io.js"></script>
-<script src="./lib/jquery-3.3.1.slim.min.js"></script>
-<script src="./lib/popper.min.js"></script>
-<script src="./lib/bootstrap.min.js"></script>
-<script src="./lib/bootstrap-toggle.min.js"></script>
--->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
-<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <link href="./node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="./public/css/style.css" rel="stylesheet">
 
-<title>Virtual Smart Trainer</title>
+  <script src="./node_modules/socket.io-client/dist/socket.io.js"></script>
+  <script src="./node_modules/jquery/dist/jquery.slim.min.js"></script>
+  <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="./node_modules/@popperjs/core/dist/cjs/popper.min.js"></script>
 
-<style>
-.progress {
-  margin-bottom: 20px;
-  width: 100%;
-  font-size: 1.2em;
-  font-weight: bold;
-  height: 2rem;
-}
-.progress-bar {
-  color: #21252C;
-}
-.alert {
-  margin-bottom: 1px;
-  padding:2px 2px;
-  max-width: 100%;
-  font-size: 0.75em;
-}
-.scroll {
-  max-height: 48em;
-  overflow-y: auto;
-}
-.list-group-item {
-  height: 3em;
-}
+  <title>Virtual Smart Trainer</title>
+
+  <style>
+  .progress {
+    margin-bottom: 20px;
+    width: 100%;
+    font-size: 1.2em;
+    font-weight: bold;
+    height: 2rem;
+  }
+  .progress-bar {
+    color: #21252C;
+  }
+  .alert {
+    margin-bottom: 1px;
+    padding:2px 2px;
+    max-width: 100%;
+    font-size: 0.75em;
+  }
+  .scroll {
+    max-height: 48em;
+    overflow-y: auto;
+  }
+  .list-group-item {
+    height: 3em;
+  }
 </style>
 
 <script type="text/javascript">
@@ -89,24 +79,23 @@ function addAlert_msg(message) {
   // Data
   ///////////////////////////////////////////////////////////////////////////
 
-  function displayData(source, data) {
-    var source = (source === 'ant') ? 'a' : '';
+  function displayData(prefix, data) {
     for (let [key, value] of Object.entries(data)) {
       try {
-        switch($('#'+source+key).attr("role")) {
+        switch($('#'+prefix+key).attr("role")) {
           case 'progressbar': {
-            var width = value / $('#'+source+key).attr("aria-valuemax") * 100
-            $('#'+source+key).attr("aria-valuenow", value);
-            $('#'+source+key).width(width + "%")
-            $('#'+source+key).text(value + $('#'+source+key).attr("title"));
+            var width = value / $('#'+prefix+key).attr("aria-valuemax") * 100
+            $('#'+prefix+key).attr("aria-valuenow", value);
+            $('#'+prefix+key).width(width + "%")
+            $('#'+prefix+key).text(value + $('#'+prefix+key).attr("title"));
             break
           }
           case 'slider': {
-            $('#'+source+key).attr("value", value);
+            $('#'+prefix+key).attr("value", value);
             break
           }
           case 'badge': {
-            $('#'+source+key).text(value);
+            $('#'+prefix+key).text(value);
             break
           }
           default: {
@@ -117,10 +106,10 @@ function addAlert_msg(message) {
     }
   }
   socket.on('tacx', function (data) {
-    displayData('tacx',data)
+    displayData('',data)
   })
   socket.on('data', function (data) {
-    displayData('data',data)
+    displayData('',data)
   })
   socket.on('ant', function (data) {
     displayData('ant',data)
@@ -179,257 +168,259 @@ function addAlert_msg(message) {
       </nav>
       <!--/Top Bar-->
 
-      <!--Cards-->
-      <div class="card-columns">
+      <!--Column-->
+      <div class="col">
 
-        <!--Tacx T1932-->
-        <div class="card text-center">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-9"><h5 class="title"><b>Tacx T1932</b></h5></div>
-              <div class="col-3"><h4><span id="last_usb" role="badge" class="badge badge-primary">?</span></h4></div>
-            </div>
-          </div>
+        <!--Cards-->
+        <div class="card-columns">
 
-          <div class="card-body">
-            <h5 class="title float-left m-2">Resistance</h5>
-            <h4><span id="resistance" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-            <div class="slidecontainer">
-              <input type="range" min="0" max="13" value="0" class="slider" id="force_index" role="slider" style="width: 100%" list="resistancelist" disabled>
-            </div>
-            <div class="container">
+          <!--Tacx T1932-->
+          <div class="card text-center">
+            <div class="card-header">
               <div class="row">
-                <div class="col-4">
-                  <h5 class="title text-right">Power</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="power" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
-                  </div>
-                </div>
-                <div class="col-4">
-                  <h5 class="title text-right">Speed</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="speed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
-                  </div>
-                </div>
-                <div class="col-4">
-                  <h5 class="title text-right">Load</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="load" title="" class="progress-bar bg-alert" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4677"></div>
-                  </div>
-                </div>
-<!--
-                <div class="col-4">
-                  <h5 class="title text-right">Cadence</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="rpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
-                  </div>
-                </div>
-                <div class="col-4">
-                  <h5 class="title text-right">HR</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="hr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
-                  </div>
-                </div>
--->
+                <div class="col-9"><h5 class="title"><b>Tacx T1932</b></h5></div>
+                <div class="col-3"><h4><span id="last_usb" role="badge" class="badge badge-primary">?</span></h4></div>
               </div>
             </div>
-          </div>
-        </div>
-        <!--/Tacx T1932-->
 
-        <!--ANT-->
-        <div class="card text-center">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-9"><h5 class="title"><b>ANT sensors</b></h5></div>
-              <div class="col-3"><h4><span id="alast_ant" role="badge" class="badge badge-primary">?</span></h4></div>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="container">
-              <div class="row">
-<!--
-                <div class="col-4">
-                  <h5 class="title text-right">Power</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="apower" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+            <div class="card-body">
+              <h5 class="title float-left m-2">Resistance</h5>
+              <h4><span id="resistance" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+              <div class="slidecontainer">
+                <input type="range" min="0" max="13" value="0" class="slider" id="force_index" role="slider" style="width: 100%" list="resistancelist" disabled>
+              </div>
+              <div class="container">
+                <div class="row">
+                  <div class="col-4">
+                    <h5 class="title text-right">Power</h5>
                   </div>
-                </div>
--->
-                <div class="col-4">
-                  <h5 class="title text-right">Speed</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="aspeed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="power" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                    </div>
                   </div>
-                </div>
-                <div class="col-4">
-                  <h5 class="title text-right">Cadence</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="arpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                  <div class="col-4">
+                    <h5 class="title text-right">Speed</h5>
                   </div>
-                </div>
-                <div class="col-4">
-                  <h5 class="title text-right">HR</h5>
-                </div>
-                <div class="col-8">
-                  <div class="progress">
-                    <div id="ahr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="speed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <h5 class="title text-right">Load</h5>
+                  </div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="load" title="" class="progress-bar bg-alert" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4677"></div>
+                    </div>
+                  </div>
+                  <div class="col-4 d-none" >
+                    <h5 class="title text-right">Cadence</h5>
+                  </div>
+                  <div class="col-8 d-none">
+                    <div class="progress">
+                      <div id="rpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                    </div>
+                  </div>
+                  <div class="col-4 d-none">
+                    <h5 class="title text-right">HR</h5>
+                  </div>
+                  <div class="col-8 d-none">
+                    <div class="progress">
+                      <div id="hr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <!--/ANT-->
+          <!--/Tacx T1932-->
 
-        <!--Application-->
-        <div class="card text-center">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-9"><h5 class="title"><b>Application</b></h5></div>
-              <div class="col-3"><h4><span id="control" role="badge" class="badge badge-primary">?</span></h4></div>
-            </div>
-          </div>
-          <div class="card-body">
-            <h5 class="title">Set Simulation</h5>
-            <ul class="list-group">
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Grade [%]</h6>
-                <h4><span id="grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Cw [kg/m]</h6>
-                <h4><span id="cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Windspeed [m/s]</h6>
-                <h4><span id="windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Crr []</h6>
-                <h4><span id="crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-            </ul>
-            <h5 class="title">Set Power</h5>
-            <ul class="list-group">
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Power [W]</h6>
-                <h4><span id="setpower" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <!--/Application-->
-
-        <!--Physics-->
-        <div class="card text-center">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-12"><h5 class="title"><b>Physics</b></h5></div>
-            </div>
-          </div>
-          <div class="card-body">
-            <ul class="list-group">
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Power calculation [W]</h6>
-                <h4><span id="last_power" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Speed [km/h]</h6>
-                <h4><span id="last_speed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Rider + Bike Mass [kg]</h6>
-                <h4><span id="last_mass" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Grade [%]</h6>
-                <h4><span id="last_grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Cw [kg/m]</h6>
-                <h4><span id="last_cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Windspeed [m/s]</h6>
-                <h4><span id="last_windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <h6 class="title">Crr []</h6>
-                <h4><span id="last_crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <!--/Physics-->
-
-        <!--Simulation-->
-<!--
-        <div class="card text-center">
-          <div class="card-header">
-            <div class="form-check form-check-inline">
+          <!--ANT-->
+          <div class="card text-center">
+            <div class="card-header">
               <div class="row">
-                <div class="col-9"><h5 class="title"><b>Simulation</b></h5></div>
-                <div class="col-3"><input class="form-check-input" type="checkbox" id="tacxUSB_simulation" value="tacxUSB_simulation"></input></div>
+                <div class="col-9"><h5 class="title"><b>ANT sensors</b></h5></div>
+                <div class="col-3"><h4><span id="antlast_ant" role="badge" class="badge badge-primary">?</span></h4></div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="container">
+                <div class="row">
+                  <div class="col-4 d-none">
+                    <h5 class="title text-right">Power</h5>
+                  </div>
+                  <div class="col-8 d-none">
+                    <div class="progress">
+                      <div id="antpower" title="W" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="800"></div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <h5 class="title text-right">Speed</h5>
+                  </div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="antspeed" title="km/h" class="progress-bar bg-warning" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="140"></div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <h5 class="title text-right">Cadence</h5>
+                  </div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="antrpm" title="rpm" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150"></div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <h5 class="title text-right">HR</h5>
+                  </div>
+                  <div class="col-8">
+                    <div class="progress">
+                      <div id="anthr" title="bpm" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="240"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div class="card-body">
-            <h5 class="title float-left m-2">Power [W]</h5>
-            <h4><span id="power_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
-            <div class="slidecontainer">
-              <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
-            </div>
+          <!--/ANT-->
 
-            <h5 class="title float-left m-2">Speed [km/h]</h5>
-            <h4><span id="speed_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
-            <div class="slidecontainer">
-              <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+          <!--Application-->
+          <div class="card text-center">
+            <div class="card-header">
+              <div class="row">
+                <div class="col-9"><h5 class="title"><b>Application</b></h5></div>
+                <div class="col-3"><h4><span id="control" role="badge" class="badge badge-primary">?</span></h4></div>
+              </div>
             </div>
-
-            <h5 class="title float-left m-2">RPM</h5>
-            <h4><span id="rpm_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
-            <div class="slidecontainer">
-              <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
-            </div>
-
-            <h5 class="title float-left m-2">HR</h5>
-            <h4><span id="hr_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
-            <div class="slidecontainer">
-              <input type="range" min="0" max="220" value="0" class="slider" id="hr_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+            <div class="card-body">
+              <h5 class="title">Set Simulation</h5>
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Grade [%]</h6>
+                  <h4><span id="grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Cw [kg/m]</h6>
+                  <h4><span id="cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Windspeed [m/s]</h6>
+                  <h4><span id="windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Crr []</h6>
+                  <h4><span id="crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+              </ul>
+              <h5 class="title">Set Power</h5>
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Power [W]</h6>
+                  <h4><span id="setpower" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+              </ul>
             </div>
           </div>
+          <!--/Application-->
+
+          <!--Physics-->
+          <div class="card text-center">
+            <div class="card-header">
+              <div class="row">
+                <div class="col-12"><h5 class="title"><b>Physics</b></h5></div>
+              </div>
+            </div>
+            <div class="card-body">
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Power calculation [W]</h6>
+                  <h4><span id="last_power" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Speed [km/h]</h6>
+                  <h4><span id="last_speed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Rider + Bike Mass [kg]</h6>
+                  <h4><span id="last_mass" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Grade [%]</h6>
+                  <h4><span id="last_grade" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Cw [kg/m]</h6>
+                  <h4><span id="last_cw" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Windspeed [m/s]</h6>
+                  <h4><span id="last_windspeed" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <h6 class="title">Crr []</h6>
+                  <h4><span id="last_crr" role="badge" class="badge badge-primary float-right m-2">?</span></h4>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <!--/Physics-->
+
+          <!--Simulation-->
+          <div class="card text-center d-none">
+            <div class="card-header">
+              <div class="form-check form-check-inline">
+                <div class="row">
+                  <div class="col-9"><h5 class="title"><b>Simulation</b></h5></div>
+                  <div class="col-3"><input class="form-check-input" type="checkbox" id="tacxUSB_simulation" value="tacxUSB_simulation"></input></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <h5 class="title float-left m-2">Power [W]</h5>
+              <h4><span id="power_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+              <div class="slidecontainer">
+                <input type="range" min="0" max="800" value="0" class="slider" id="power_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+              </div>
+
+              <h5 class="title float-left m-2">Speed [km/h]</h5>
+              <h4><span id="speed_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+              <div class="slidecontainer">
+                <input type="range" min="0" max="120" value="0" class="slider" id="speed_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+              </div>
+
+              <h5 class="title float-left m-2">RPM</h5>
+              <h4><span id="rpm_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+              <div class="slidecontainer">
+                <input type="range" min="0" max="120" value="0" class="slider" id="rpm_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+              </div>
+
+              <h5 class="title float-left m-2">HR</h5>
+              <h4><span id="hr_sim_badge" class="badge badge-primary float-right m-2">?</span></h4>
+              <div class="slidecontainer">
+                <input type="range" min="0" max="220" value="0" class="slider" id="hr_sim" style="width: 100%; " oninput="newVal(this.id, this.value)"  onchange="newVal(this.id, this.value)"></input>
+              </div>
+            </div>
+          </div>
+          <!--/Simulation-->
         </div>
--->
-        <!--/Simulation-->
+        <!--/cards-->
+
       </div>
-      <!--/cards-->
+      <!--/Column-->
 
-      <!--Logs-->
-      <div class="card text-center h-100 mb-6">
-        <div class="card-header">
-          <h5 class="title"><b>Logs</b></h5>
-        </div>
-        <div class="card-body">
-          <div class="container">
-            <div class="row">
+      <!--Column-->
+      <div class="col">
+
+        <!--Logs-->
+        <div class="card text-center">
+          <div class="card-header">
+            <h5 class="title"><b>Logs</b></h5>
+          </div>
+          <div class="card-body">
+            <div class="container">
               <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="messages_server" value="messages_server" checked>
                 <label class="form-check-label" for="messages_server">Server</label>
@@ -483,13 +474,15 @@ function addAlert_msg(message) {
                 <label class="form-check-label" for="messages_error">Error</label>
               </div>
             </div>
-            <div class="row scroll">
-              <div class="alert" id="alerts"></div>
+            <div class="container-fluid scroll">
+              <div class="alert alert-dark" role="alert" id="alerts">first alert</div>
             </div>
           </div>
         </div>
+        <!--/Logs-->
       </div>
-      <!--/Logs-->
+      <!--/Column-->
+
 
       <!--Footer-->
       <footer class="page-footer font-small primary">
