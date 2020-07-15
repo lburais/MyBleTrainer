@@ -35,7 +35,6 @@ Tested with a Raspberry Pi 3+ with onboard BLE and nodejs 14.x
 
 ## Work in progress
 Testing ... testing ... testing...
-* connect and manage ANT HR and speed cadence sensors
 * connect and manage BLE HR and speed cadence sensors
 * dynamicaly set simulation parameters (mass, ...)
 * more ...
@@ -94,9 +93,9 @@ After=bluetooth.service network-online.target
 
 
 [Service]
-ExecStart=/usr/bin/node /home/pi/server.js
+ExecStart=/usr/bin/node /mnt/dietpi_userdata/osiris/MyBleTrainer/server.js
 # Required on some systems
-#WorkingDirectory=/home/pi
+#WorkingDirectory=/mnt/dietpi_userdata/osiris/MyBleTrainer
 Restart=always
 # Restart service after 10 seconds if node service crashes
 RestartSec=10
@@ -128,37 +127,13 @@ sudo reboot
 sudo systemctl status FTMS.service
 ```
 
-* plug the RS232 to USB converter in any USB port
-* start your Daum ergobike 8008 TRS
-* start an app like ZWIFT and your Daum bike will appear as "DAUM Ergobike 8008 TRS" device with two services (power & FTMS)
-
 ## website / server
-* start your browser and enter "pi-adress:3000" (try to get fixed IP address for you raspberry on your router before)
+* start your browser and enter "hostname:3000"
 you can follow the Virtual Smart Trainer activity on a this website.
 
 It will display the current power, rpm, speed
-the current gear and program your Daum is running and the socket messages.
-This site is used to toggle between ERG and SIM mode and toggle between switching gears or just power
+
 ### you can use the server to:
-* see current data from Daum Ergobike
+* see current data from Tacx T1932
 * see power calculation (simulation), grade (slope), Cw (aerodynamic drag coefficient)
-* stop / restart RS232 interface via server
-* toggle socket messages - key / raw / error
-
-## current features 0.6.4 BETA
-### common
-* advanced webserver with dashboard and log messages based on Bootstrap v4.1.3
-* apps recognize BLE (Bluetooth low energy) GATT FTM (Fitness machine) and CPC (Cycling power and cadence) service
-### in ZWIFT
-* ERG mode is fully implemented (FTMS control point), can be switched in workouts via ZWIFT app.
-* SIM mode is fully implemented (FTMS control point) and physics simulation based on parameters send from ZWIFT and parameters input by the user - see section "launch"
-* use virtual gearbox and use Daum buttons and jog wheel to switch gears
-* use gpios (see gpio.js) to add hardware switches for more realistic ride and shifting experience, if not, use the jog wheel or +/- buttons on Daum ergobike 8008 TRS
-
-### tested apps
-* FULL GAZ - SIM mode working; no rpm
-* ZWIFT - ERG mode working; SIM mode working; all signals working
-
-# outlook / features to be developed
-* start NodeJS server and raspberry in access point / hotspot mode to connect via mobile device and scan for your local Wi-Fi and enter credentials
-* scan for updates via server and select ergoFACE versions, download and reboot
+* toggle socket messages
